@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import PillButton from '../components/PillButton';
+import MeritAmount from '../components/MeritAmount';
 import { Colors } from '../constants/colors';
 import { Typography } from '../constants/typography';
 import { loadPersona } from '../storage/persona';
@@ -27,15 +28,19 @@ export default function HomeScreen() {
       : `Day ${stats.currentStreak} Streak`
     : '';
 
-  const earned = stats ? `$${stats.totalEarned.toLocaleString()}` : '$0';
-
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.center}>
         {persona && (
           <Text style={styles.personaLabel}>{persona.name.toUpperCase()}</Text>
         )}
-        <Text style={styles.counter}>{earned}</Text>
+        <MeritAmount
+          amount={stats?.totalEarned ?? 0}
+          symbolSize={52}
+          textStyle={styles.counter}
+          color={Colors.primaryText}
+          style={styles.counterRow}
+        />
         {stats && stats.currentStreak > 0 && (
           <Text style={styles.streak}>{streakLabel}</Text>
         )}
@@ -63,10 +68,11 @@ const styles = StyleSheet.create({
     color: Colors.pureWhite,
     marginBottom: 28,
   },
+  counterRow: {
+    marginBottom: 10,
+  },
   counter: {
     ...Typography.heroNumber,
-    color: Colors.primaryText,
-    marginBottom: 10,
   },
   streak: {
     ...Typography.metaLabel,

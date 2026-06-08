@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { StackNavigationProp, RouteProp } from '@react-navigation/stack';
 import PillButton from '../components/PillButton';
+import MeritAmount from '../components/MeritAmount';
 import { Colors } from '../constants/colors';
 import { Typography } from '../constants/typography';
 import { loadPersona } from '../storage/persona';
@@ -30,8 +31,24 @@ export default function SessionCompleteScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.center}>
-        <Text style={styles.earnAmount}>+${earnedThisSession}</Text>
-        <Text style={styles.total}>Total: ${totalEarned.toLocaleString()}</Text>
+        <MeritAmount
+          amount={earnedThisSession}
+          prefix="+"
+          symbolSize={50}
+          textStyle={styles.earnAmount}
+          color={Colors.pureWhite}
+          style={styles.earnRow}
+        />
+        <View style={styles.totalRow}>
+          <Text style={styles.totalLabel}>Total: </Text>
+          <MeritAmount
+            amount={totalEarned}
+            symbolSize={18}
+            textStyle={styles.totalAmount}
+            color={Colors.primaryText}
+            style={{ gap: 4 }}
+          />
+        </View>
         {personaName ? (
           <Text style={styles.affirmation}>{personaName} just got closer.</Text>
         ) : null}
@@ -64,16 +81,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 28,
   },
-  earnAmount: {
-    ...Typography.earnAmount,
-    color: Colors.pureWhite,
-    marginBottom: 14,
-  },
-  total: {
-    ...Typography.secondaryFigure,
-    color: Colors.primaryText,
+  earnRow:    { marginBottom: 14 },
+  earnAmount: { ...Typography.earnAmount },
+  totalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 12,
   },
+  totalLabel:  { ...Typography.secondaryFigure, color: Colors.primaryText },
+  totalAmount: { ...Typography.secondaryFigure },
   affirmation: {
     ...Typography.smallAffirmation,
     color: Colors.dim,

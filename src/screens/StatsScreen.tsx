@@ -5,6 +5,7 @@ import { BlurView } from 'expo-blur';
 import { Colors } from '../constants/colors';
 import { Typography } from '../constants/typography';
 import { loadStats } from '../storage/stats';
+import MeritAmount from '../components/MeritAmount';
 import type { SessionStats } from '../types';
 
 const DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -39,9 +40,13 @@ export default function StatsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.earnedLabel}>TOTAL EARNED</Text>
-        <Text style={styles.earnedValue}>
-          ${(stats?.totalEarned ?? 0).toLocaleString()}
-        </Text>
+        <MeritAmount
+          amount={stats?.totalEarned ?? 0}
+          symbolSize={36}
+          textStyle={styles.earnedValue}
+          color={Colors.primaryText}
+          style={styles.earnedValueRow}
+        />
 
         <View style={styles.card}>
           <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFill} />
@@ -96,11 +101,8 @@ const styles = StyleSheet.create({
     color: Colors.pureWhite,
     marginBottom: 9,
   },
-  earnedValue: {
-    ...Typography.sectionHeadline,
-    color: Colors.primaryText,
-    marginBottom: 28,
-  },
+  earnedValueRow: { marginBottom: 28 },
+  earnedValue:    { ...Typography.sectionHeadline },
   card: {
     borderRadius: 20,
     overflow: 'hidden',
@@ -134,8 +136,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primaryText,
     borderRadius: 6,
   },
-  dayLabel:     { ...Typography.dayLabel, color: Colors.dim },
-  statCard:     {},
+  dayLabel:      { ...Typography.dayLabel, color: Colors.dim },
+  statCard:      {},
   statCardInner: { paddingHorizontal: 20 },
   statRow: {
     flexDirection: 'row',
@@ -143,6 +145,6 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
   },
   statRowBorder: { borderBottomWidth: 0.5, borderBottomColor: Colors.statSeparator },
-  statLabel:    { ...Typography.statRowLabel, color: Colors.dim },
-  statValue:    { ...Typography.statRowValue, color: Colors.primaryText },
+  statLabel:     { ...Typography.statRowLabel, color: Colors.dim },
+  statValue:     { ...Typography.statRowValue, color: Colors.primaryText },
 });
