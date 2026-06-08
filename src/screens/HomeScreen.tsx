@@ -10,6 +10,14 @@ import { loadPersona } from '../storage/persona';
 import { loadStats } from '../storage/stats';
 import type { RootStackParamList, PersonaData, SessionStats } from '../types';
 
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return 'Good morning.';
+  if (hour >= 12 && hour < 17) return 'Good afternoon.';
+  if (hour >= 17 && hour < 21) return 'Good evening.';
+  return 'Late night grind.';
+}
+
 export default function HomeScreen() {
   const nav = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [persona, setPersona] = useState<PersonaData | null>(null);
@@ -31,6 +39,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.center}>
+        <Text style={styles.greeting}>{getGreeting()}</Text>
         {persona && (
           <Text style={styles.personaLabel}>{persona.name.toUpperCase()}</Text>
         )}
@@ -41,7 +50,6 @@ export default function HomeScreen() {
           color={Colors.primaryText}
           style={styles.counterRow}
         />
-        <Text style={styles.tagline}>Clock in as who you're becoming.</Text>
         {stats && stats.currentStreak > 0 && (
           <Text style={styles.streak}>{streakLabel}</Text>
         )}
@@ -64,6 +72,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
     paddingBottom: 72,
   },
+  greeting: {
+    fontSize: 13,
+    fontWeight: '300',
+    color: Colors.fade,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
   personaLabel: {
     ...Typography.personaLabel,
     color: Colors.pureWhite,
@@ -74,12 +89,6 @@ const styles = StyleSheet.create({
   },
   counter: {
     ...Typography.heroNumber,
-  },
-  tagline: {
-    ...Typography.smallAffirmation,
-    color: Colors.fade,
-    marginBottom: 24,
-    textAlign: 'center',
   },
   streak: {
     ...Typography.metaLabel,
