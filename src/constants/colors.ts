@@ -1,46 +1,19 @@
 export const Colors = {
-  // --- Base surfaces (light theme) ---
-  background:    '#F5F5F7',
-  backgroundAlt: '#FFFFFF',
-  surface:       '#FFFFFF',
-  surfaceGlass:  'rgba(255,255,255,0.92)',
+  background:        '#1A1A1A',
+  primaryText:       '#F5F5F0',
+  pureWhite:         '#FFFFFF',
+  dim:               'rgba(245,245,240,0.42)',
+  fade:              'rgba(245,245,240,0.22)',
+  ghost:             'rgba(245,245,240,0.13)',
 
-  // --- Interactive / brand ---
-  primary:       '#6B3A8E',
-  primaryMid:    '#8B52B8',
-  accent:        '#A870CC',
-  textPrimary:   '#1A1A2E',
-  textSecondary: '#4A4060',
-  textMuted:     '#9090B0',
-  border:        'rgba(0,0,0,0.09)',
+  glassBg:           'rgba(255,255,255,0.07)',
+  glassBorder:       'rgba(255,255,255,0.12)',
+  glassBorderLight:  'rgba(255,255,255,0.22)',
+  glassPrimary:      'rgba(255,255,255,0.12)',
+  glassShineTop:     'rgba(255,255,255,0.22)',
 
-  // --- Status ---
-  success: '#3DAF72',
-  warning: '#F5A623',
-  error:   '#E05C6E',
-
-  // --- Accent color palette ---
-  accentColors: [
-    '#5CE8A6', '#7CB4FF', '#FF7BAC', '#FFB952',
-    '#B39DFB', '#5CD8F0', '#FFD166', '#FF9E77',
-  ],
-
-  // --- Gradient (light) ---
-  gradientDark:  '#E8E8F2',
-  gradientMid:   '#F0F0F8',
-  gradientLight: '#FAFAFF',
-
-  // --- Glass cards ---
-  glass:       'rgba(255,255,255,0.88)',
-  glassMid:    'rgba(255,255,255,0.65)',
-  glassBorder: 'rgba(0,0,0,0.07)',
-
-  // --- UI accent ---
-  primaryBright: '#7B45A8',
-
-  // --- Text on light background ---
-  textOnDark:     '#1A1A2E',
-  textOnDarkSub:  '#4A4060',
-  textOnDarkMute: '#9090B0',
-  borderDark:     'rgba(0,0,0,0.09)',
-};
+  navBg:             'rgba(255,255,255,0.06)',
+  navBorder:         'rgba(255,255,255,0.10)',
+  statSeparator:     'rgba(255,255,255,0.07)',
+  chartTrack:        'rgba(255,255,255,0.05)',
+} as const;
