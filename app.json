@@ -1,20 +1,20 @@
 {
   "expo": {
-    "name": "AppName",
-    "slug": "app-name",
+    "name": "Method",
+    "slug": "method",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#6B3A8E"
+      "backgroundColor": "#1A1A1A"
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.yourcompany.appname"
+      "bundleIdentifier": "com.darrentabago.method"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -24,16 +24,6 @@
         "projectId": "YOUR_EAS_PROJECT_ID"
       }
     },
-    "owner": "YOUR_EXPO_ACCOUNT",
-    "plugins": [
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/icon.png",
-          "color": "#6B3A8E",
-          "sounds": []
-        }
-      ]
-    ]
+    "owner": "YOUR_EXPO_ACCOUNT"
   }
 }

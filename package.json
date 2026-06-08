@@ -1,5 +1,5 @@
 {
-  "name": "rn-app-template",
+  "name": "method",
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
@@ -17,6 +17,7 @@
     "@react-navigation/stack": "^7.9.1",
     "@sentry/react-native": "~7.2.0",
     "expo": "~54.0.33",
+    "expo-av": "~15.1.6",
     "expo-blur": "~14.1.4",
     "expo-dev-client": "~6.0.21",
     "expo-haptics": "~15.0.8",
@@ -35,6 +36,7 @@
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
     "react-native-worklets": "~0.8.3",
+    "react-native-svg": "~15.11.2",
     "uuid": "^14.0.0"
   },
   "devDependencies": {
