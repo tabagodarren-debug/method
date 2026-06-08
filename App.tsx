@@ -1,35 +1,19 @@
-import * as Sentry from '@sentry/react-native';
-
-Sentry.init({
-  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN ?? '',
-  enabled: !!process.env.EXPO_PUBLIC_SENTRY_DSN,
-});
-
 import 'react-native-gesture-handler';
+import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import * as Notifications from 'expo-notifications';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppNavigator from './src/navigation/AppNavigator';
-import { initializePurchases } from './src/services/purchases';
-import { initAnalytics } from './src/services/analytics';
+import { initAudio } from './src/services/audio';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-  }),
-});
+export default function App() {
+  useEffect(() => {
+    initAudio();
+  }, []);
 
-initializePurchases();
-initAnalytics();
-
-export default Sentry.wrap(function App() {
   return (
-    <>
-      <AppNavigator />
+    <SafeAreaProvider>
       <StatusBar style="light" />
-    </>
+      <AppNavigator />
+    </SafeAreaProvider>
   );
-});
+}
