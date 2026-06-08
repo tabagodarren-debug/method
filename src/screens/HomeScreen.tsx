@@ -1,104 +1,77 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
-import GradientScreen from '../components/GradientScreen';
-import { useTheme, ThemeColors } from '../context/ThemeContext';
-import { Theme } from '../constants/theme';
-import { getOnboardingData } from '../storage/settings';
+import React, { useCallback, useState } from 'react';
+import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import PillButton from '../components/PillButton';
+import { Colors } from '../constants/colors';
+import { Typography } from '../constants/typography';
+import { loadPersona } from '../storage/persona';
+import { loadStats } from '../storage/stats';
+import type { RootStackParamList, PersonaData, SessionStats } from '../types';
 
 export default function HomeScreen() {
-  const theme = useTheme();
-  const styles = useMemo(() => createStyles(theme), [theme]);
-  const [name, setName] = useState('');
+  const nav = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const [persona, setPersona] = useState<PersonaData | null>(null);
+  const [stats, setStats] = useState<SessionStats | null>(null);
 
   useFocusEffect(
-    React.useCallback(() => {
-      getOnboardingData().then(data => {
-        if (data.name) setName(data.name);
-      });
+    useCallback(() => {
+      loadPersona().then(setPersona);
+      loadStats().then(setStats);
     }, [])
   );
 
-  const greeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
-  };
+  const streakLabel = stats
+    ? stats.currentStreak === 1
+      ? 'Day 1 Streak'
+      : `Day ${stats.currentStreak} Streak`
+    : '';
+
+  const earned = stats ? `$${stats.totalEarned.toLocaleString()}` : '$0';
 
   return (
-    <GradientScreen>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.greeting}>
-            {greeting()}{name ? `, ${name}` : ''}
-          </Text>
-          <Text style={styles.title}>Welcome to AppName</Text>
-          <Text style={styles.subtitle}>
-            Your home base. Add your content and features here.
-          </Text>
-        </View>
-
-        <View style={styles.cardPlaceholder}>
-          <Text style={styles.cardPlaceholderText}>
-            Your main content goes here.{'\n'}Replace this with your app's core feature.
-          </Text>
-        </View>
+    <SafeAreaView style={styles.safe}>
+      <View style={styles.center}>
+        {persona && (
+          <Text style={styles.personaLabel}>{persona.name.toUpperCase()}</Text>
+        )}
+        <Text style={styles.counter}>{earned}</Text>
+        {stats && stats.currentStreak > 0 && (
+          <Text style={styles.streak}>{streakLabel}</Text>
+        )}
+        <PillButton
+          label="Start"
+          onPress={() => nav.navigate('FocusSession')}
+          style={styles.startBtn}
+        />
       </View>
-    </GradientScreen>
+    </SafeAreaView>
   );
 }
 
-function createStyles(theme: ThemeColors) {
-  return StyleSheet.create({
-    container: {
-      flex: 1,
-      paddingHorizontal: Theme.spacing.lg,
-      paddingTop: Theme.spacing.lg,
-    },
-    header: {
-      marginBottom: Theme.spacing.xl,
-    },
-    greeting: {
-      fontSize: Theme.fontSize.sm,
-      fontWeight: '600',
-      color: theme.textMuted,
-      textTransform: 'uppercase',
-      letterSpacing: 1,
-      marginBottom: 6,
-    },
-    title: {
-      fontSize: Theme.fontSize.xxl,
-      fontWeight: '800',
-      color: theme.textPrimary,
-      letterSpacing: -0.5,
-      marginBottom: Theme.spacing.sm,
-    },
-    subtitle: {
-      fontSize: Theme.fontSize.md,
-      color: theme.textSecondary,
-      lineHeight: 24,
-    },
-    cardPlaceholder: {
-      backgroundColor: theme.glass,
-      borderRadius: Theme.borderRadius.lg,
-      borderWidth: 1,
-      borderColor: theme.glassBorder,
-      padding: Theme.spacing.xl,
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: 160,
-      shadowColor: theme.primary,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.08,
-      shadowRadius: 10,
-      elevation: 2,
-    },
-    cardPlaceholderText: {
-      fontSize: Theme.fontSize.sm,
-      color: theme.textMuted,
-      textAlign: 'center',
-      lineHeight: 22,
-    },
-  });
-}
+const styles = StyleSheet.create({
+  safe:   { flex: 1, backgroundColor: Colors.background },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+    paddingBottom: 72,
+  },
+  personaLabel: {
+    ...Typography.personaLabel,
+    color: Colors.pureWhite,
+    marginBottom: 28,
+  },
+  counter: {
+    ...Typography.heroNumber,
+    color: Colors.primaryText,
+    marginBottom: 10,
+  },
+  streak: {
+    ...Typography.metaLabel,
+    color: Colors.dim,
+    marginBottom: 32,
+  },
+  startBtn: { marginTop: 4 },
+});
