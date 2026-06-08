@@ -41,6 +41,7 @@ export default function HomeScreen() {
           color={Colors.primaryText}
           style={styles.counterRow}
         />
+        <Text style={styles.tagline}>Clock in as who you're becoming.</Text>
         {stats && stats.currentStreak > 0 && (
           <Text style={styles.streak}>{streakLabel}</Text>
         )}
@@ -73,6 +74,12 @@ const styles = StyleSheet.create({
   },
   counter: {
     ...Typography.heroNumber,
+  },
+  tagline: {
+    ...Typography.smallAffirmation,
+    color: Colors.fade,
+    marginBottom: 24,
+    textAlign: 'center',
   },
   streak: {
     ...Typography.metaLabel,
