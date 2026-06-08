@@ -1,0 +1,55 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { SessionStats } from '../types';
+
+const STATS_KEY = '@method/stats';
+const SESSION_EARN = 25;
+const SESSION_MINUTES = 25;
+
+export const DEFAULT_STATS: SessionStats = {
+  totalEarned: 0,
+  sessionsCompleted: 0,
+  currentStreak: 0,
+  longestStreak: 0,
+  lastSessionDate: '',
+  totalMinutes: 0,
+};
+
+export const loadStats = async (): Promise<SessionStats> => {
+  const raw = await AsyncStorage.getItem(STATS_KEY);
+  if (!raw) return { ...DEFAULT_STATS };
+  try {
+    return { ...DEFAULT_STATS, ...(JSON.parse(raw) as Partial<SessionStats>) };
+  } catch {
+    return { ...DEFAULT_STATS };
+  }
+};
+
+const saveStats = async (stats: SessionStats): Promise<void> => {
+  await AsyncStorage.setItem(STATS_KEY, JSON.stringify(stats));
+};
+
+export const recordSession = async (dateStr: string): Promise<SessionStats> => {
+  const stats = await loadStats();
+
+  stats.totalEarned += SESSION_EARN;
+  stats.sessionsCompleted += 1;
+  stats.totalMinutes += SESSION_MINUTES;
+
+  if (stats.lastSessionDate !== dateStr) {
+    const isConsecutive = isYesterday(stats.lastSessionDate, dateStr);
+    stats.currentStreak = isConsecutive ? stats.currentStreak + 1 : 1;
+    stats.longestStreak = Math.max(stats.longestStreak, stats.currentStreak);
+    stats.lastSessionDate = dateStr;
+  }
+
+  await saveStats(stats);
+  return stats;
+};
+
+function isYesterday(prevDate: string, today: string): boolean {
+  if (!prevDate) return false;
+  const prev = new Date(prevDate);
+  const curr = new Date(today);
+  const diff = curr.getTime() - prev.getTime();
+  return diff === 86400000;
+}
