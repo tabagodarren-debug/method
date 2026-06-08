@@ -6,7 +6,10 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 import { Colors } from '../constants/colors';
 import { Typography } from '../constants/typography';
 import { loadPersona, clearPersona } from '../storage/persona';
+import { loadInterval, saveInterval } from '../storage/settings';
 import type { PersonaData, RootStackParamList } from '../types';
+
+const INTERVAL_PRESETS = [15, 25, 30, 45, 50];
 
 const TIMELINE_LABELS: Record<string, string> = {
   '6mo': '6 months',
@@ -27,12 +30,19 @@ function SettingRow({ label, value, isLast = false }: { label: string; value: st
 export default function SettingsScreen() {
   const nav = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [persona, setPersona] = useState<PersonaData | null>(null);
+  const [interval, setInterval] = useState(25);
 
   useFocusEffect(
     useCallback(() => {
       loadPersona().then(setPersona);
+      loadInterval().then(setInterval);
     }, [])
   );
+
+  const handleSelectInterval = async (minutes: number) => {
+    await saveInterval(minutes);
+    setInterval(minutes);
+  };
 
   const handleResetPersona = () => {
     Alert.alert('Reset persona?', 'This will restart onboarding.', [
@@ -51,7 +61,32 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.sectionTitle}>YOUR PERSONA</Text>
+
+        <Text style={styles.sectionTitle}>FOCUS INTERVAL</Text>
+        <View style={styles.card}>
+          <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFill} />
+          <View style={styles.cardOverlay} />
+          <View style={styles.presetRow}>
+            {INTERVAL_PRESETS.map(mins => {
+              const selected = interval === mins;
+              return (
+                <TouchableOpacity
+                  key={mins}
+                  onPress={() => handleSelectInterval(mins)}
+                  activeOpacity={0.75}
+                  style={[styles.preset, selected && styles.presetSelected]}
+                >
+                  <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFill} />
+                  <View style={[StyleSheet.absoluteFill, { backgroundColor: selected ? Colors.glassPrimary : 'transparent' }]} />
+                  <Text style={[styles.presetLabel, selected && styles.presetLabelSelected]}>{mins}</Text>
+                  <Text style={[styles.presetUnit, selected && styles.presetLabelSelected]}>min</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        <Text style={[styles.sectionTitle, { marginTop: 32 }]}>YOUR PERSONA</Text>
         <View style={styles.card}>
           <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFill} />
           <View style={styles.cardOverlay} />
@@ -81,12 +116,11 @@ export default function SettingsScreen() {
         </View>
         <TouchableOpacity
           style={styles.linkBtn}
-          onPress={() =>
-            Alert.alert('Coming soon', 'Method Pro — $3.99 one-time IAP coming in next build.')
-          }
+          onPress={() => Alert.alert('Coming soon', 'Method Pro — $3.99 one-time IAP coming in next build.')}
         >
           <Text style={styles.linkLabel}>Unlock Method Pro — $3.99</Text>
         </TouchableOpacity>
+
       </ScrollView>
     </SafeAreaView>
   );
@@ -105,6 +139,34 @@ const styles = StyleSheet.create({
   },
   cardOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: Colors.glassBg },
   cardInner:   { paddingHorizontal: 20 },
+  presetRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 14,
+    gap: 8,
+  },
+  preset: {
+    flex: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 0.5,
+    borderColor: Colors.glassBorder,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  presetSelected: { borderColor: Colors.glassBorderLight },
+  presetLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.dim,
+  },
+  presetUnit: {
+    fontSize: 9,
+    fontWeight: '400',
+    color: Colors.ghost,
+    marginTop: 2,
+  },
+  presetLabelSelected: { color: Colors.pureWhite },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',

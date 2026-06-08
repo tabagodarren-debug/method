@@ -9,11 +9,13 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 import { Colors } from '../constants/colors';
 import { Typography } from '../constants/typography';
 import { loadPersona } from '../storage/persona';
+import { loadInterval } from '../storage/settings';
 import { getRandomAffirmation, getNextAffirmation } from '../utils/affirmations';
 import { playTrack, pauseAudio, resumeAudio, skipTrack, stopAudio, getCurrentTrackName, hasTracks } from '../services/audio';
 import type { PersonaData, RootStackParamList } from '../types';
 
-const SESSION_SECONDS = 25 * 60;
+// TODO: remove DEV_SECONDS_OVERRIDE before shipping — set to null to use real interval
+const DEV_SECONDS_OVERRIDE: number | null = 10;
 const AFFIRMATION_INTERVAL = 4 * 60 * 1000;
 const EARN_PER_SESSION = 25;
 
@@ -26,8 +28,9 @@ function formatTime(seconds: number): string {
 export default function FocusSessionScreen() {
   const nav = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [persona, setPersona] = useState<PersonaData | null>(null);
-  const [timeLeft, setTimeLeft] = useState(SESSION_SECONDS);
+  const [timeLeft, setTimeLeft] = useState(DEV_SECONDS_OVERRIDE ?? 25 * 60);
   const [affirmation, setAffirmation] = useState('');
+  const [intervalMinutes, setIntervalMinutes] = useState(25);
   const [isPlaying, setIsPlaying] = useState(false);
   const [trackName, setTrackName] = useState('No music');
 
@@ -37,6 +40,7 @@ export default function FocusSessionScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      loadInterval().then(setIntervalMinutes);
       loadPersona().then(p => {
         setPersona(p);
         if (p) setAffirmation(getRandomAffirmation(p));
@@ -58,7 +62,9 @@ export default function FocusSessionScreen() {
   );
 
   const startTimer = () => {
-    endTimeRef.current = Date.now() + SESSION_SECONDS * 1000;
+    const seconds = DEV_SECONDS_OVERRIDE ?? (intervalMinutes * 60);
+    setTimeLeft(seconds);
+    endTimeRef.current = Date.now() + seconds * 1000;
     intervalRef.current = setInterval(() => {
       const remaining = Math.ceil(((endTimeRef.current ?? 0) - Date.now()) / 1000);
       if (remaining <= 0) {

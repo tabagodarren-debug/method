@@ -52,3 +52,17 @@ export const getOnboardingData = async (): Promise<{ name: string }> => {
   const raw = await AsyncStorage.getItem(ONBOARDING_DATA_KEY);
   return parseJsonObject<{ name: string }>(raw, { name: '' });
 };
+
+const INTERVAL_KEY = '@method/interval';
+const DEFAULT_INTERVAL = 25;
+
+export const saveInterval = async (minutes: number): Promise<void> => {
+  await AsyncStorage.setItem(INTERVAL_KEY, String(minutes));
+};
+
+export const loadInterval = async (): Promise<number> => {
+  const raw = await AsyncStorage.getItem(INTERVAL_KEY);
+  if (!raw) return DEFAULT_INTERVAL;
+  const parsed = parseInt(raw, 10);
+  return isNaN(parsed) ? DEFAULT_INTERVAL : parsed;
+};
