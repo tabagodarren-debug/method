@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, TouchableOpacity, Animated,
   ImageSourcePropType, Dimensions, StatusBar,
 } from 'react-native';
+import MaskedView from '@react-native-masked-view/masked-view';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +23,8 @@ const SLIDE_DURATION_MS = 20000;
 const FADE_DURATION_MS = 900;
 
 const { width: SW, height: SH } = Dimensions.get('screen');
+const TIMER_W = 320;
+const TIMER_H = 110;
 
 const SLIDES: ImageSourcePropType[] = [
   require('../../assets/slideshow/1.png'),
@@ -129,6 +132,8 @@ export default function FocusSessionScreen() {
     setTrackName(getCurrentTrackName());
   };
 
+  const timeStr = formatTime(timeLeft);
+
   return (
     <View style={styles.root}>
       <StatusBar hidden />
@@ -150,19 +155,27 @@ export default function FocusSessionScreen() {
         activeOpacity={1}
       />
 
-      {/* Liquid glass timer — centered */}
-      <View style={styles.timerWrap} pointerEvents="none">
-        <BlurView intensity={72} tint="dark" style={StyleSheet.absoluteFill} />
-        {/* Top-to-bottom glass gradient */}
-        <LinearGradient
-          colors={['rgba(255,255,255,0.18)', 'rgba(255,255,255,0.04)']}
-          style={StyleSheet.absoluteFill}
-          start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 1 }}
-        />
-        {/* Top shine line */}
-        <View style={styles.timerShine} />
-        <Text style={styles.timerDigits}>{formatTime(timeLeft)}</Text>
+      {/* Glass-texture timer — blurred background cut through digit shapes */}
+      <View style={styles.timerArea} pointerEvents="none">
+        <MaskedView
+          style={{ width: TIMER_W, height: TIMER_H }}
+          maskElement={
+            <View style={styles.maskContainer}>
+              <Text style={styles.maskDigits}>{timeStr}</Text>
+            </View>
+          }
+        >
+          {/* The blurred background shows through the digit shapes */}
+          <BlurView intensity={90} tint="light" style={{ width: TIMER_W, height: TIMER_H }} />
+          <LinearGradient
+            colors={['rgba(255,255,255,0.55)', 'rgba(255,255,255,0.20)']}
+            style={StyleSheet.absoluteFill}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+          />
+        </MaskedView>
+        {/* White edge glow layered on top for refraction effect */}
+        <Text style={styles.digitGlow}>{timeStr}</Text>
       </View>
 
       {/* Controls — revealed on tap */}
@@ -189,7 +202,6 @@ export default function FocusSessionScreen() {
               <Text style={styles.trackName} numberOfLines={1}>{trackName}</Text>
             </View>
           </View>
-
           <TouchableOpacity style={styles.endBtn} onPress={() => nav.goBack()}>
             <Text style={styles.endBtnLabel}>End session</Text>
           </TouchableOpacity>
@@ -201,41 +213,41 @@ export default function FocusSessionScreen() {
 
 const styles = StyleSheet.create({
   root:  { flex: 1, width: SW, height: SH, backgroundColor: Colors.background },
-  scrim: { position: 'absolute', width: SW, height: SH, backgroundColor: 'rgba(0,0,0,0.30)' },
+  scrim: { position: 'absolute', width: SW, height: SH, backgroundColor: 'rgba(0,0,0,0.28)' },
 
-  timerWrap: {
+  timerArea: {
     position: 'absolute',
-    width: 264,
-    height: 108,
-    borderRadius: 36,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.26)',
+    width: TIMER_W,
+    height: TIMER_H,
+    left: SW / 2 - TIMER_W / 2,
+    top: SH / 2 - TIMER_H / 2,
     alignItems: 'center',
     justifyContent: 'center',
-    alignSelf: 'center',
-    left: SW / 2 - 132,
-    top: SH / 2 - 54,
   },
-  timerShine: {
+  maskContainer: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  maskDigits: {
+    fontSize: 72,
+    fontWeight: '800',
+    color: 'black',
+    letterSpacing: 5,
+  },
+  digitGlow: {
     position: 'absolute',
-    top: 0,
-    left: 24,
-    right: 24,
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.60)',
-  },
-  timerDigits: {
-    fontSize: 58,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.95)',
-    letterSpacing: 4,
-    textShadowColor: 'rgba(255,255,255,0.25)',
+    fontSize: 72,
+    fontWeight: '800',
+    letterSpacing: 5,
+    color: 'transparent',
+    textShadowColor: 'rgba(255,255,255,0.55)',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 16,
+    textShadowRadius: 12,
   },
 
-  controls: { position: 'absolute', left: 20, right: 20, gap: 8 },
+  controls:    { position: 'absolute', left: 20, right: 20, gap: 8 },
   musicBarWrap: {
     flexDirection: 'row',
     alignItems: 'center',
