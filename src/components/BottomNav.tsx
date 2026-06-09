@@ -137,8 +137,7 @@ export default function BottomNav({ state, descriptors, navigation }: BottomTabB
                     size={22}
                     color={color}
                     focused={focused}
-                    isSpin={route.name === 'SettingsTab'}
-                  />
+                    />
                   <Text style={[styles.tabLabel, { color }]}>
                     {TAB_LABELS[route.name]}
                   </Text>
