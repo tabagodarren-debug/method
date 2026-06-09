@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     width: TIMER_W,
     height: TIMER_H,
     left: SW / 2 - TIMER_W / 2,
-    top: SH / 2 - TIMER_H / 2,
+    top: SH / 2 - TIMER_H / 2 - 110,
     alignItems: 'center',
     justifyContent: 'center',
   },
