@@ -21,17 +21,8 @@ const EARN_PER_SESSION = 25;
 const SLIDE_DURATION_MS = 8000;
 const FADE_DURATION_MS = 900;
 
-const SLIDES: ImageSourcePropType[] = [
-  require('../../assets/slideshow/slide1.jpg'),
-  require('../../assets/slideshow/slide2.jpg'),
-  require('../../assets/slideshow/slide3.jpg'),
-  require('../../assets/slideshow/slide4.jpg'),
-  require('../../assets/slideshow/slide5.jpg'),
-  require('../../assets/slideshow/slide6.jpg'),
-  require('../../assets/slideshow/slide7.jpg'),
-  require('../../assets/slideshow/slide8.jpg'),
-  require('../../assets/slideshow/slide9.png'),
-];
+// Add slide images here: require('../../assets/slideshow/slide1.jpg'), etc.
+const SLIDES: ImageSourcePropType[] = [];
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -84,7 +75,9 @@ export default function FocusSessionScreen() {
         });
       }
       startTimer();
-      slideRef.current = setInterval(advanceSlide, SLIDE_DURATION_MS);
+      if (SLIDES.length > 1) {
+        slideRef.current = setInterval(advanceSlide, SLIDE_DURATION_MS);
+      }
 
       return () => {
         clearInterval(timerRef.current!);
@@ -141,11 +134,13 @@ export default function FocusSessionScreen() {
   return (
     <View style={styles.root}>
       {/* Slideshow background */}
-      <Animated.Image
-        source={SLIDES[slideIndex]}
-        style={[StyleSheet.absoluteFill, { opacity: slideOpacity }]}
-        resizeMode="cover"
-      />
+      {SLIDES.length > 0 && (
+        <Animated.Image
+          source={SLIDES[slideIndex]}
+          style={[StyleSheet.absoluteFill, { opacity: slideOpacity }]}
+          resizeMode="cover"
+        />
+      )}
       <View style={styles.scrim} />
 
       <SafeAreaView style={styles.safe}>
