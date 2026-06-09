@@ -68,7 +68,7 @@ export default function HomeScreen() {
         </View>
 
         <PillButton
-          label="Start"
+          label="Lock in"
           onPress={() => nav.navigate('FocusSession')}
           style={styles.startBtn}
         />
