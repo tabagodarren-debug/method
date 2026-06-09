@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, SafeAreaView, TouchableOpacity,
+  View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Animated, ImageSourcePropType,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,6 +18,20 @@ import type { PersonaData, RootStackParamList } from '../types';
 const DEV_SECONDS_OVERRIDE: number | null = 10;
 const AFFIRMATION_INTERVAL = 4 * 60 * 1000;
 const EARN_PER_SESSION = 25;
+const SLIDE_DURATION_MS = 8000;
+const FADE_DURATION_MS = 900;
+
+const SLIDES: ImageSourcePropType[] = [
+  require('../../assets/slideshow/slide1.jpg'),
+  require('../../assets/slideshow/slide2.jpg'),
+  require('../../assets/slideshow/slide3.jpg'),
+  require('../../assets/slideshow/slide4.jpg'),
+  require('../../assets/slideshow/slide5.jpg'),
+  require('../../assets/slideshow/slide6.jpg'),
+  require('../../assets/slideshow/slide7.jpg'),
+  require('../../assets/slideshow/slide8.jpg'),
+  require('../../assets/slideshow/slide9.png'),
+];
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -33,10 +47,28 @@ export default function FocusSessionScreen() {
   const [intervalMinutes, setIntervalMinutes] = useState(25);
   const [isPlaying, setIsPlaying] = useState(false);
   const [trackName, setTrackName] = useState('No music');
+  const [slideIndex, setSlideIndex] = useState(() => Math.floor(Math.random() * SLIDES.length));
 
+  const slideOpacity = useRef(new Animated.Value(1)).current;
   const endTimeRef = useRef<number | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const affirmationRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const slideRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const advanceSlide = useCallback(() => {
+    Animated.timing(slideOpacity, {
+      toValue: 0,
+      duration: FADE_DURATION_MS,
+      useNativeDriver: true,
+    }).start(() => {
+      setSlideIndex(prev => (prev + 1) % SLIDES.length);
+      Animated.timing(slideOpacity, {
+        toValue: 1,
+        duration: FADE_DURATION_MS,
+        useNativeDriver: true,
+      }).start();
+    });
+  }, [slideOpacity]);
 
   useFocusEffect(
     useCallback(() => {
@@ -52,23 +84,25 @@ export default function FocusSessionScreen() {
         });
       }
       startTimer();
+      slideRef.current = setInterval(advanceSlide, SLIDE_DURATION_MS);
 
       return () => {
-        clearInterval(intervalRef.current!);
+        clearInterval(timerRef.current!);
         clearInterval(affirmationRef.current!);
+        clearInterval(slideRef.current!);
         stopAudio();
       };
-    }, [])
+    }, [advanceSlide])
   );
 
   const startTimer = () => {
     const seconds = DEV_SECONDS_OVERRIDE ?? (intervalMinutes * 60);
     setTimeLeft(seconds);
     endTimeRef.current = Date.now() + seconds * 1000;
-    intervalRef.current = setInterval(() => {
+    timerRef.current = setInterval(() => {
       const remaining = Math.ceil(((endTimeRef.current ?? 0) - Date.now()) / 1000);
       if (remaining <= 0) {
-        clearInterval(intervalRef.current!);
+        clearInterval(timerRef.current!);
         handleSessionComplete();
       } else {
         setTimeLeft(remaining);
@@ -105,49 +139,58 @@ export default function FocusSessionScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.center}>
-        <Text style={styles.timer}>{formatTime(timeLeft)}</Text>
-        {affirmation ? (
-          <Text style={styles.affirmation}>{affirmation}</Text>
-        ) : null}
-      </View>
+    <View style={styles.root}>
+      {/* Slideshow background */}
+      <Animated.Image
+        source={SLIDES[slideIndex]}
+        style={[StyleSheet.absoluteFill, { opacity: slideOpacity }]}
+        resizeMode="cover"
+      />
+      <View style={styles.scrim} />
 
-      <View style={styles.musicBarWrap}>
-        <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFill} />
-        <View style={styles.musicOverlay} />
-        <TouchableOpacity onPress={() => {}} style={styles.musicIcon}>
-          <Ionicons name="play-skip-back" size={18} color={Colors.dim} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={togglePlay} style={styles.musicIcon}>
-          <Ionicons
-            name={isPlaying ? 'pause' : 'play'}
-            size={20}
-            color={Colors.primaryText}
-          />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={handleSkip} style={styles.musicIcon}>
-          <Ionicons name="play-skip-forward" size={18} color={Colors.dim} />
-        </TouchableOpacity>
-        <View style={styles.trackInfo}>
-          <Text style={styles.trackName} numberOfLines={1}>{trackName}</Text>
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.center}>
+          <Text style={styles.timer}>{formatTime(timeLeft)}</Text>
+          {affirmation ? (
+            <Text style={styles.affirmation}>{affirmation}</Text>
+          ) : null}
         </View>
-      </View>
 
-      <View style={{ height: 72 }} />
+        <View style={styles.musicBarWrap}>
+          <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFill} />
+          <View style={styles.musicOverlay} />
+          <TouchableOpacity onPress={() => {}} style={styles.musicIcon}>
+            <Ionicons name="play-skip-back" size={18} color={Colors.dim} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={togglePlay} style={styles.musicIcon}>
+            <Ionicons
+              name={isPlaying ? 'pause' : 'play'}
+              size={20}
+              color={Colors.primaryText}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleSkip} style={styles.musicIcon}>
+            <Ionicons name="play-skip-forward" size={18} color={Colors.dim} />
+          </TouchableOpacity>
+          <View style={styles.trackInfo}>
+            <Text style={styles.trackName} numberOfLines={1}>{trackName}</Text>
+          </View>
+        </View>
 
-      <TouchableOpacity
-        style={styles.endBtn}
-        onPress={() => nav.goBack()}
-      >
-        <Text style={styles.endBtnLabel}>End session</Text>
-      </TouchableOpacity>
-    </SafeAreaView>
+        <View style={{ height: 72 }} />
+
+        <TouchableOpacity style={styles.endBtn} onPress={() => nav.goBack()}>
+          <Text style={styles.endBtnLabel}>End session</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.background },
+  root:   { flex: 1, backgroundColor: Colors.background },
+  scrim:  { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.62)' },
+  safe:   { flex: 1, backgroundColor: 'transparent' },
   center: {
     flex: 1,
     alignItems: 'center',
@@ -157,12 +200,12 @@ const styles = StyleSheet.create({
   timer: {
     ...Typography.heroNumber,
     fontSize: 85,
-    color: Colors.primaryText,
+    color: Colors.pureWhite,
     marginBottom: 28,
   },
   affirmation: {
     ...Typography.largeAffirmation,
-    color: 'rgba(245,245,240,0.60)',
+    color: 'rgba(255,255,255,0.72)',
     textAlign: 'center',
   },
   musicBarWrap: {
@@ -188,5 +231,5 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     padding: 8,
   },
-  endBtnLabel: { ...Typography.metaLabel, color: Colors.ghost },
+  endBtnLabel: { ...Typography.metaLabel, color: 'rgba(255,255,255,0.35)' },
 });
