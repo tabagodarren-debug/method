@@ -21,8 +21,28 @@ const EARN_PER_SESSION = 25;
 const SLIDE_DURATION_MS = 20000;
 const FADE_DURATION_MS = 900;
 
-// Add slide images here: require('../../assets/slideshow/slide1.jpg'), etc.
-const SLIDES: ImageSourcePropType[] = [];
+const SLIDES: ImageSourcePropType[] = [
+  require('../../assets/slideshow/1.png'),
+  require('../../assets/slideshow/2.png'),
+  require('../../assets/slideshow/3.png'),
+  require('../../assets/slideshow/4.png'),
+  require('../../assets/slideshow/5.png'),
+  require('../../assets/slideshow/6.png'),
+  require('../../assets/slideshow/7.png'),
+  require('../../assets/slideshow/8.png'),
+  require('../../assets/slideshow/9.png'),
+  require('../../assets/slideshow/10.png'),
+  require('../../assets/slideshow/11.png'),
+  require('../../assets/slideshow/12.png'),
+  require('../../assets/slideshow/13.png'),
+  require('../../assets/slideshow/14.png'),
+  require('../../assets/slideshow/15.png'),
+  require('../../assets/slideshow/16.png'),
+  require('../../assets/slideshow/17.png'),
+  require('../../assets/slideshow/18.png'),
+  require('../../assets/slideshow/19.png'),
+  require('../../assets/slideshow/20.png'),
+];
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60).toString().padStart(2, '0');
