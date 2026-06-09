@@ -4,6 +4,7 @@ import {
   ImageSourcePropType, Dimensions, StatusBar,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
@@ -149,24 +150,37 @@ export default function FocusSessionScreen() {
         activeOpacity={1}
       />
 
-      {/* Timer pill — always visible, top center */}
-      <View style={[styles.timerPill, { top: insets.top + 16 }]}>
-        <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFill} />
-        <View style={styles.timerPillOverlay} />
-        <Text style={styles.timerText}>{formatTime(timeLeft)}</Text>
+      {/* Liquid glass timer — centered */}
+      <View style={styles.timerWrap} pointerEvents="none">
+        <BlurView intensity={72} tint="dark" style={StyleSheet.absoluteFill} />
+        {/* Top-to-bottom glass gradient */}
+        <LinearGradient
+          colors={['rgba(255,255,255,0.18)', 'rgba(255,255,255,0.04)']}
+          style={StyleSheet.absoluteFill}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+        />
+        {/* Top shine line */}
+        <View style={styles.timerShine} />
+        <Text style={styles.timerDigits}>{formatTime(timeLeft)}</Text>
       </View>
 
-      {/* Controls — visible on tap */}
+      {/* Controls — revealed on tap */}
       {controlsVisible && (
-        <View style={[styles.controls, { bottom: insets.bottom + 24 }]}>
+        <View style={[styles.controls, { bottom: insets.bottom + 32 }]}>
           <View style={styles.musicBarWrap}>
-            <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFill} />
-            <View style={styles.musicOverlay} />
+            <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+            <LinearGradient
+              colors={['rgba(255,255,255,0.14)', 'rgba(255,255,255,0.04)']}
+              style={StyleSheet.absoluteFill}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
+            />
             <TouchableOpacity onPress={() => {}} style={styles.musicIcon}>
               <Ionicons name="play-skip-back" size={18} color={Colors.dim} />
             </TouchableOpacity>
             <TouchableOpacity onPress={togglePlay} style={styles.musicIcon}>
-              <Ionicons name={isPlaying ? 'pause' : 'play'} size={20} color={Colors.primaryText} />
+              <Ionicons name={isPlaying ? 'pause' : 'play'} size={20} color={Colors.pureWhite} />
             </TouchableOpacity>
             <TouchableOpacity onPress={handleSkip} style={styles.musicIcon}>
               <Ionicons name="play-skip-forward" size={18} color={Colors.dim} />
@@ -187,40 +201,55 @@ export default function FocusSessionScreen() {
 
 const styles = StyleSheet.create({
   root:  { flex: 1, width: SW, height: SH, backgroundColor: Colors.background },
-  scrim: { position: 'absolute', width: SW, height: SH, backgroundColor: 'rgba(0,0,0,0.35)' },
+  scrim: { position: 'absolute', width: SW, height: SH, backgroundColor: 'rgba(0,0,0,0.30)' },
 
-  timerPill: {
+  timerWrap: {
     position: 'absolute',
-    alignSelf: 'center',
-    left: SW / 2 - 64,
-    width: 128,
-    height: 44,
-    borderRadius: 22,
+    width: 264,
+    height: 108,
+    borderRadius: 36,
     overflow: 'hidden',
-    borderWidth: 0.5,
-    borderColor: Colors.glassBorder,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.26)',
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'center',
+    left: SW / 2 - 132,
+    top: SH / 2 - 54,
   },
-  timerPillOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.3)' },
-  timerText: { ...Typography.secondaryFigure, color: Colors.pureWhite, fontSize: 18, fontWeight: '600' },
+  timerShine: {
+    position: 'absolute',
+    top: 0,
+    left: 24,
+    right: 24,
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.60)',
+  },
+  timerDigits: {
+    fontSize: 58,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.95)',
+    letterSpacing: 4,
+    textShadowColor: 'rgba(255,255,255,0.25)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 16,
+  },
 
-  controls: { position: 'absolute', left: 0, right: 0, paddingHorizontal: 20, gap: 8 },
+  controls: { position: 'absolute', left: 20, right: 20, gap: 8 },
   musicBarWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 52,
-    borderRadius: 18,
+    height: 54,
+    borderRadius: 20,
     overflow: 'hidden',
-    borderWidth: 0.5,
-    borderColor: Colors.glassBorder,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.22)',
     paddingHorizontal: 14,
     gap: 10,
   },
-  musicOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: Colors.glassBg },
-  musicIcon:    { width: 32, alignItems: 'center', justifyContent: 'center' },
-  trackInfo:    { flex: 1 },
-  trackName:    { ...Typography.musicTrackName, color: Colors.primaryText },
-  endBtn:       { alignSelf: 'center', padding: 12 },
-  endBtnLabel:  { ...Typography.metaLabel, color: 'rgba(255,255,255,0.35)' },
+  musicIcon:   { width: 32, alignItems: 'center', justifyContent: 'center' },
+  trackInfo:   { flex: 1 },
+  trackName:   { ...Typography.musicTrackName, color: Colors.primaryText },
+  endBtn:      { alignSelf: 'center', padding: 12 },
+  endBtnLabel: { ...Typography.metaLabel, color: 'rgba(255,255,255,0.30)' },
 });
