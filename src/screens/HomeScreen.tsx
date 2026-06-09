@@ -58,7 +58,7 @@ export default function HomeScreen() {
           <View style={styles.meritShine} />
           <MeritAmount
             amount={stats?.totalEarned ?? 0}
-            symbolSize={82}
+            symbolSize={72}
             textStyle={styles.counter}
             color={Colors.pureWhite}
           />
