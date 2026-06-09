@@ -18,7 +18,7 @@ import type { PersonaData, RootStackParamList } from '../types';
 const DEV_SECONDS_OVERRIDE: number | null = 10;
 const AFFIRMATION_INTERVAL = 4 * 60 * 1000;
 const EARN_PER_SESSION = 25;
-const SLIDE_DURATION_MS = 8000;
+const SLIDE_DURATION_MS = 20000;
 const FADE_DURATION_MS = 900;
 
 // Add slide images here: require('../../assets/slideshow/slide1.jpg'), etc.
