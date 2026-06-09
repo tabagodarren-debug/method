@@ -22,7 +22,7 @@ export default function MeritAmount({
     <View style={[{ flexDirection: 'row', alignItems: 'center', gap: 6 }, style]}>
       {prefix ? <Text style={[textStyle, { color }]}>{prefix}</Text> : null}
       <Image
-        source={require('../../assets/merit-symbol-method.png')}
+        source={require('../../assets/merit-symbol.png')}
         style={{ width: symbolSize, height: symbolSize, tintColor: color }}
         resizeMode="contain"
       />
