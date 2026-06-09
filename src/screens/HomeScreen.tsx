@@ -1,5 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import PillButton from '../components/PillButton';
@@ -43,16 +45,28 @@ export default function HomeScreen() {
         {persona && (
           <Text style={styles.personaLabel}>{persona.name.toUpperCase()}</Text>
         )}
-        <MeritAmount
-          amount={stats?.totalEarned ?? 0}
-          symbolSize={52}
-          textStyle={styles.counter}
-          color={Colors.primaryText}
-          style={styles.counterRow}
-        />
-        {stats && stats.currentStreak > 0 && (
-          <Text style={styles.streak}>{streakLabel}</Text>
-        )}
+
+        {/* Glass merit card */}
+        <View style={styles.meritGlass}>
+          <BlurView intensity={32} tint="dark" style={StyleSheet.absoluteFill} />
+          <LinearGradient
+            colors={['rgba(255,255,255,0.14)', 'rgba(255,255,255,0.04)']}
+            style={StyleSheet.absoluteFill}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+          />
+          <View style={styles.meritShine} />
+          <MeritAmount
+            amount={stats?.totalEarned ?? 0}
+            symbolSize={52}
+            textStyle={styles.counter}
+            color={Colors.pureWhite}
+          />
+          {stats && stats.currentStreak > 0 && (
+            <Text style={styles.streak}>{streakLabel}</Text>
+          )}
+        </View>
+
         <PillButton
           label="Start"
           onPress={() => nav.navigate('FocusSession')}
@@ -82,18 +96,31 @@ const styles = StyleSheet.create({
   personaLabel: {
     ...Typography.personaLabel,
     color: Colors.pureWhite,
-    marginBottom: 28,
+    marginBottom: 24,
   },
-  counterRow: {
-    marginBottom: 10,
+  meritGlass: {
+    borderRadius: 32,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+    paddingHorizontal: 32,
+    paddingVertical: 24,
+    alignItems: 'center',
+    marginBottom: 32,
   },
-  counter: {
-    ...Typography.heroNumber,
+  meritShine: {
+    position: 'absolute',
+    top: 0,
+    left: 24,
+    right: 24,
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.45)',
   },
+  counter: { ...Typography.heroNumber },
   streak: {
     ...Typography.metaLabel,
     color: Colors.dim,
-    marginBottom: 32,
+    marginTop: 8,
   },
   startBtn: { marginTop: 4 },
 });

@@ -63,7 +63,6 @@ export default function FocusSessionScreen() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [trackName, setTrackName] = useState('No music');
   const [slideIndex, setSlideIndex] = useState(() => Math.floor(Math.random() * SLIDES.length));
-  const [controlsVisible, setControlsVisible] = useState(false);
 
   const slideOpacity = useRef(new Animated.Value(1)).current;
   const endTimeRef = useRef<number | null>(null);
@@ -148,13 +147,6 @@ export default function FocusSessionScreen() {
       )}
       <View style={styles.scrim} />
 
-      {/* Tap anywhere to toggle controls */}
-      <TouchableOpacity
-        style={StyleSheet.absoluteFill}
-        onPress={() => setControlsVisible(v => !v)}
-        activeOpacity={1}
-      />
-
       {/* Glass-texture timer — blurred background cut through digit shapes */}
       <View style={styles.timerArea} pointerEvents="none">
         <MaskedView
@@ -178,9 +170,8 @@ export default function FocusSessionScreen() {
         <Text style={styles.digitGlow}>{timeStr}</Text>
       </View>
 
-      {/* Controls — revealed on tap */}
-      {controlsVisible && (
-        <View style={[styles.controls, { bottom: insets.bottom + 32 }]}>
+      {/* Always-visible controls */}
+      <View style={[styles.controls, { bottom: insets.bottom + 32 }]}>
           <View style={styles.musicBarWrap}>
             <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
             <LinearGradient
@@ -206,7 +197,6 @@ export default function FocusSessionScreen() {
             <Text style={styles.endBtnLabel}>End session</Text>
           </TouchableOpacity>
         </View>
-      )}
     </View>
   );
 }
