@@ -194,6 +194,13 @@ export default function FocusSessionScreen() {
             </View>
           </View>
           <TouchableOpacity style={styles.endBtn} onPress={() => nav.goBack()}>
+            <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+            <LinearGradient
+              colors={['rgba(255,255,255,0.12)', 'rgba(255,255,255,0.04)']}
+              style={StyleSheet.absoluteFill}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
+            />
             <Text style={styles.endBtnLabel}>End session</Text>
           </TouchableOpacity>
         </View>
@@ -252,6 +259,14 @@ const styles = StyleSheet.create({
   musicIcon:   { width: 32, alignItems: 'center', justifyContent: 'center' },
   trackInfo:   { flex: 1 },
   trackName:   { ...Typography.musicTrackName, color: Colors.primaryText },
-  endBtn:      { alignSelf: 'center', padding: 12 },
-  endBtnLabel: { ...Typography.metaLabel, color: 'rgba(255,255,255,0.30)' },
+  endBtn: {
+    alignSelf: 'center',
+    paddingHorizontal: 28,
+    paddingVertical: 12,
+    borderRadius: 100,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+  },
+  endBtnLabel: { ...Typography.metaLabel, color: 'rgba(255,255,255,0.72)' },
 });
