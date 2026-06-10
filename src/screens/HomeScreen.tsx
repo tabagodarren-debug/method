@@ -23,10 +23,34 @@ function getGreeting(): string {
   return 'Late night grind.';
 }
 
+function todayKey(): string {
+  return new Date().toISOString().split('T')[0];
+}
+
 function yesterdayKey(): string {
   const d = new Date();
   d.setDate(d.getDate() - 1);
   return d.toISOString().split('T')[0];
+}
+
+function StatPill({ label, sessions, merit }: { label: string; sessions: number; merit: number }) {
+  return (
+    <View style={styles.statPill}>
+      <BlurView intensity={24} tint="dark" style={StyleSheet.absoluteFill} />
+      <LinearGradient
+        colors={['rgba(255,255,255,0.10)', 'rgba(255,255,255,0.03)']}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+      />
+      <Text style={styles.statPillLabel}>{label}</Text>
+      <Text style={styles.statPillSessions}>
+        {sessions > 0 ? sessions : '—'}
+        {sessions > 0 ? <Text style={styles.statPillUnit}> {sessions === 1 ? 'session' : 'sessions'}</Text> : null}
+      </Text>
+      {sessions > 0 && <Text style={styles.statPillMerit}>+{merit} merit</Text>}
+    </View>
+  );
 }
 
 export default function HomeScreen() {
@@ -47,6 +71,8 @@ export default function HomeScreen() {
     : '';
 
   const dailySessions = stats?.dailySessions ?? {};
+  const todaySessions = dailySessions[todayKey()] ?? 0;
+  const todayMerit = todaySessions * 25;
   const yesterdaySessions = dailySessions[yesterdayKey()] ?? 0;
   const yesterdayMerit = yesterdaySessions * 25;
 
@@ -82,23 +108,11 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Yesterday pill */}
-        {yesterdaySessions > 0 && (
-          <View style={styles.yesterdayPill}>
-            <BlurView intensity={24} tint="dark" style={StyleSheet.absoluteFill} />
-            <LinearGradient
-              colors={['rgba(255,255,255,0.10)', 'rgba(255,255,255,0.03)']}
-              style={StyleSheet.absoluteFill}
-              start={{ x: 0.5, y: 0 }}
-              end={{ x: 0.5, y: 1 }}
-            />
-            <Text style={styles.yesterdayText}>
-              {yesterdaySessions} {yesterdaySessions === 1 ? 'session' : 'sessions'} yesterday
-              {'  ·  '}
-              <Text style={styles.yesterdayMerit}>+{yesterdayMerit} merit</Text>
-            </Text>
-          </View>
-        )}
+        {/* Today + Yesterday stat pills */}
+        <View style={styles.statRow}>
+          <StatPill label="Today" sessions={todaySessions} merit={todayMerit} />
+          <StatPill label="Yesterday" sessions={yesterdaySessions} merit={yesterdayMerit} />
+        </View>
 
         <PillButton
           label="Lock in"
@@ -174,24 +188,44 @@ const styles = StyleSheet.create({
   weekStripRow: {
     marginTop: 2,
   },
-  yesterdayPill: {
-    borderRadius: 100,
+  statRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 20,
+  },
+  statPill: {
+    flex: 1,
+    borderRadius: 20,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.10)',
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginBottom: 20,
+    paddingVertical: 14,
   },
-  yesterdayText: {
+  statPillLabel: {
+    fontSize: 10,
+    fontWeight: '500',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.30)',
+    marginBottom: 6,
+  },
+  statPillSessions: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: Colors.pureWhite,
+    letterSpacing: -0.5,
+  },
+  statPillUnit: {
     fontSize: 12,
     fontWeight: '400',
-    letterSpacing: 0.2,
-    color: 'rgba(255,255,255,0.45)',
+    color: 'rgba(255,255,255,0.50)',
   },
-  yesterdayMerit: {
-    color: 'rgba(255,255,255,0.65)',
-    fontWeight: '500',
+  statPillMerit: {
+    fontSize: 11,
+    fontWeight: '400',
+    color: 'rgba(255,255,255,0.40)',
+    marginTop: 3,
   },
   startBtn: { marginBottom: 16 },
   shareRow: {
