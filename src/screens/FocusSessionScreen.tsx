@@ -239,9 +239,9 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 5,
     color: 'transparent',
-    textShadowColor: 'rgba(255,255,255,0.90)',
+    textShadowColor: 'rgba(255,255,255,1.0)',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 3,
+    textShadowRadius: 8,
   },
   digitGlow: {
     position: 'absolute',
@@ -249,9 +249,9 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 5,
     color: 'transparent',
-    textShadowColor: 'rgba(255,255,255,0.35)',
+    textShadowColor: 'rgba(255,255,255,0.50)',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 18,
+    textShadowRadius: 22,
   },
 
   controls:    { position: 'absolute', left: 20, right: 20, gap: 8 },
