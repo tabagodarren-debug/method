@@ -166,7 +166,7 @@ export default function FocusSessionScreen() {
             end={{ x: 0.5, y: 1 }}
           />
         </MaskedView>
-        {/* White edge glow layered on top for refraction effect */}
+        <Text style={styles.digitEdge}>{timeStr}</Text>
         <Text style={styles.digitGlow}>{timeStr}</Text>
       </View>
 
@@ -233,15 +233,25 @@ const styles = StyleSheet.create({
     color: 'black',
     letterSpacing: 5,
   },
+  digitEdge: {
+    position: 'absolute',
+    fontSize: 72,
+    fontWeight: '800',
+    letterSpacing: 5,
+    color: 'transparent',
+    textShadowColor: 'rgba(255,255,255,0.90)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 3,
+  },
   digitGlow: {
     position: 'absolute',
     fontSize: 72,
     fontWeight: '800',
     letterSpacing: 5,
     color: 'transparent',
-    textShadowColor: 'rgba(255,255,255,0.75)',
+    textShadowColor: 'rgba(255,255,255,0.35)',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 20,
+    textShadowRadius: 18,
   },
 
   controls:    { position: 'absolute', left: 20, right: 20, gap: 8 },
