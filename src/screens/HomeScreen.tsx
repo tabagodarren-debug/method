@@ -48,7 +48,7 @@ function StatPill({ label, sessions, merit }: { label: string; sessions: number;
         {sessions > 0 ? sessions : '—'}
         {sessions > 0 ? <Text style={styles.statPillUnit}> {sessions === 1 ? 'session' : 'sessions'}</Text> : null}
       </Text>
-      {sessions > 0 && <Text style={styles.statPillMerit}>+{merit} merit</Text>}
+      {sessions > 0 && <Text style={styles.statPillMerit}>+{merit} MERIT$</Text>}
     </View>
   );
 }
