@@ -34,6 +34,6 @@ export type RootStackParamList = {
   Onboarding: undefined;
   Main: undefined;
   FocusSession: undefined;
-  SessionComplete: { earnedThisSession: number };
+  SessionComplete: { earnedThisSession: number; intervalMinutes: number };
   Break: undefined;
 };

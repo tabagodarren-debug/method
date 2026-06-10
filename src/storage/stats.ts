@@ -2,8 +2,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { SessionStats } from '../types';
 
 const STATS_KEY = '@method/stats';
-const SESSION_EARN = 25;
-const SESSION_MINUTES = 25;
 
 export const DEFAULT_STATS: SessionStats = {
   totalEarned: 0,
@@ -29,12 +27,12 @@ const saveStats = async (stats: SessionStats): Promise<void> => {
   await AsyncStorage.setItem(STATS_KEY, JSON.stringify(stats));
 };
 
-export const recordSession = async (dateStr: string): Promise<SessionStats> => {
+export const recordSession = async (dateStr: string, earnedAmount: number, intervalMinutes: number): Promise<SessionStats> => {
   const stats = await loadStats();
 
-  stats.totalEarned += SESSION_EARN;
+  stats.totalEarned += earnedAmount;
   stats.sessionsCompleted += 1;
-  stats.totalMinutes += SESSION_MINUTES;
+  stats.totalMinutes += intervalMinutes;
   stats.dailySessions = stats.dailySessions ?? {};
   stats.dailySessions[dateStr] = (stats.dailySessions[dateStr] ?? 0) + 1;
 

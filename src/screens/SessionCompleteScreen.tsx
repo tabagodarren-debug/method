@@ -15,14 +15,14 @@ type Route = RouteProp<RootStackParamList, 'SessionComplete'>;
 export default function SessionCompleteScreen() {
   const nav = useNavigation<StackNavigationProp<RootStackParamList>>();
   const route = useRoute<Route>();
-  const { earnedThisSession } = route.params;
+  const { earnedThisSession, intervalMinutes } = route.params;
 
   const [personaName, setPersonaName] = useState('');
   const [totalEarned, setTotalEarned] = useState(0);
 
   useEffect(() => {
     const today = new Date().toISOString().slice(0, 10);
-    Promise.all([loadPersona(), recordSession(today)]).then(([persona, stats]) => {
+    Promise.all([loadPersona(), recordSession(today, earnedThisSession, intervalMinutes)]).then(([persona, stats]) => {
       setPersonaName(persona?.name ?? '');
       setTotalEarned(stats.totalEarned);
     });

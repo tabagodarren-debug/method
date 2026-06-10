@@ -13,12 +13,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../constants/colors';
 import { Typography } from '../constants/typography';
 import { loadInterval } from '../storage/settings';
+import { calculateMerit } from '../utils/merit';
 import { playTrack, pauseAudio, resumeAudio, skipTrack, stopAudio, getCurrentTrackName, hasTracks } from '../services/audio';
 import type { RootStackParamList } from '../types';
 
 // TODO: remove DEV_SECONDS_OVERRIDE before shipping — set to null to use real interval
 const DEV_SECONDS_OVERRIDE: number | null = 10;
-const EARN_PER_SESSION = 25;
 const SLIDE_DURATION_MS = 20000;
 const FADE_DURATION_MS = 900;
 
@@ -114,7 +114,10 @@ export default function FocusSessionScreen() {
       if (remaining <= 0) {
         clearInterval(timerRef.current!);
         stopAudio();
-        nav.replace('SessionComplete', { earnedThisSession: EARN_PER_SESSION });
+        nav.replace('SessionComplete', {
+          earnedThisSession: calculateMerit(intervalMinutes),
+          intervalMinutes,
+        });
       } else {
         setTimeLeft(remaining);
       }

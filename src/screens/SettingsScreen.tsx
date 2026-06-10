@@ -1,15 +1,21 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ScrollView } from 'react-native';
 import { BlurView } from 'expo-blur';
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { Colors } from '../constants/colors';
 import { Typography } from '../constants/typography';
 import { loadPersona, clearPersona } from '../storage/persona';
 import { loadInterval, saveInterval } from '../storage/settings';
+import { checkAppUnlock } from '../services/purchases';
+import { meritRangeLabel } from '../utils/merit';
 import type { PersonaData, RootStackParamList } from '../types';
 
-const INTERVAL_PRESETS = [15, 25, 30, 45, 50];
+const FREE_PRESETS = [15, 30, 60];
+const CUSTOM_MIN = 5;
+const CUSTOM_MAX = 180;
+const CUSTOM_STEP = 5;
 
 const TIMELINE_LABELS: Record<string, string> = {
   '6mo': '6 months',
@@ -30,26 +36,37 @@ function SettingRow({ label, value, isLast = false }: { label: string; value: st
 export default function SettingsScreen() {
   const nav = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [persona, setPersona] = useState<PersonaData | null>(null);
-  const [interval, setInterval] = useState(25);
+  const [interval, setIntervalMinutes] = useState(30);
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [customMinutes, setCustomMinutes] = useState(45);
 
   useFocusEffect(
     useCallback(() => {
       loadPersona().then(setPersona);
-      loadInterval().then(setInterval);
+      checkAppUnlock().then(setIsUnlocked);
+      loadInterval().then(mins => {
+        setIntervalMinutes(mins);
+        if (!FREE_PRESETS.includes(mins)) setCustomMinutes(mins);
+      });
     }, [])
   );
 
-  const handleSelectInterval = async (minutes: number) => {
+  const selectInterval = async (minutes: number) => {
     await saveInterval(minutes);
-    setInterval(minutes);
+    setIntervalMinutes(minutes);
+  };
+
+  const adjustCustom = async (delta: number) => {
+    const next = Math.min(CUSTOM_MAX, Math.max(CUSTOM_MIN, customMinutes + delta));
+    setCustomMinutes(next);
+    await selectInterval(next);
   };
 
   const handleResetPersona = () => {
     Alert.alert('Reset persona?', 'This will restart onboarding.', [
       { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Reset',
-        style: 'destructive',
+        text: 'Reset', style: 'destructive',
         onPress: async () => {
           await clearPersona();
           nav.reset({ index: 0, routes: [{ name: 'Onboarding' }] });
@@ -57,6 +74,8 @@ export default function SettingsScreen() {
       },
     ]);
   };
+
+  const isCustomSelected = !FREE_PRESETS.includes(interval);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -66,24 +85,71 @@ export default function SettingsScreen() {
         <View style={styles.card}>
           <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFill} />
           <View style={styles.cardOverlay} />
+
+          {/* Free presets */}
           <View style={styles.presetRow}>
-            {INTERVAL_PRESETS.map(mins => {
+            {FREE_PRESETS.map(mins => {
               const selected = interval === mins;
               return (
                 <TouchableOpacity
                   key={mins}
-                  onPress={() => handleSelectInterval(mins)}
+                  onPress={() => selectInterval(mins)}
                   activeOpacity={0.75}
                   style={[styles.preset, selected && styles.presetSelected]}
                 >
                   <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFill} />
                   <View style={[StyleSheet.absoluteFill, { backgroundColor: selected ? Colors.glassPrimary : 'transparent' }]} />
-                  <Text style={[styles.presetLabel, selected && styles.presetLabelSelected]}>{mins}</Text>
-                  <Text style={[styles.presetUnit, selected && styles.presetLabelSelected]}>min</Text>
+                  <Text style={[styles.presetNum, selected && styles.presetTextOn]}>{mins}</Text>
+                  <Text style={[styles.presetUnit, selected && styles.presetTextOn]}>min</Text>
+                  <Text style={[styles.presetMerit, selected && styles.presetMeritOn]}>
+                    {meritRangeLabel(mins)}
+                  </Text>
                 </TouchableOpacity>
               );
             })}
           </View>
+
+          {/* Divider */}
+          <View style={styles.divider} />
+
+          {/* Custom interval — Pro */}
+          {isUnlocked ? (
+            <View style={styles.customRow}>
+              <View style={styles.customLeft}>
+                <Text style={[styles.customLabel, isCustomSelected && styles.presetTextOn]}>Custom</Text>
+                <Text style={styles.presetMerit}>{meritRangeLabel(customMinutes)}</Text>
+              </View>
+              <View style={styles.stepper}>
+                <TouchableOpacity
+                  onPress={() => adjustCustom(-CUSTOM_STEP)}
+                  style={styles.stepBtn}
+                  disabled={customMinutes <= CUSTOM_MIN}
+                >
+                  <Ionicons name="remove" size={18} color={customMinutes <= CUSTOM_MIN ? Colors.ghost : Colors.primaryText} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => selectInterval(customMinutes)} style={styles.stepValue}>
+                  <Text style={[styles.stepValueText, isCustomSelected && styles.presetTextOn]}>
+                    {customMinutes} min
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => adjustCustom(CUSTOM_STEP)}
+                  style={styles.stepBtn}
+                  disabled={customMinutes >= CUSTOM_MAX}
+                >
+                  <Ionicons name="add" size={18} color={customMinutes >= CUSTOM_MAX ? Colors.ghost : Colors.primaryText} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.customLocked}
+              onPress={() => Alert.alert('Method Pro', 'Unlock custom focus intervals and more with Method Pro.')}
+            >
+              <Ionicons name="lock-closed" size={12} color={Colors.ghost} style={{ marginRight: 6 }} />
+              <Text style={styles.customLockedLabel}>Custom interval — Pro</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <Text style={[styles.sectionTitle, { marginTop: 32 }]}>YOUR PERSONA</Text>
@@ -111,15 +177,17 @@ export default function SettingsScreen() {
           <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFill} />
           <View style={styles.cardOverlay} />
           <View style={styles.cardInner}>
-            <SettingRow label="Status" value="Free" isLast />
+            <SettingRow label="Status" value={isUnlocked ? 'Active' : 'Free'} isLast />
           </View>
         </View>
-        <TouchableOpacity
-          style={styles.linkBtn}
-          onPress={() => Alert.alert('Coming soon', 'Method Pro — $3.99 one-time IAP coming in next build.')}
-        >
-          <Text style={styles.linkLabel}>Unlock Method Pro — $3.99</Text>
-        </TouchableOpacity>
+        {!isUnlocked && (
+          <TouchableOpacity
+            style={styles.linkBtn}
+            onPress={() => Alert.alert('Coming soon', 'Method Pro — $3.99 one-time IAP coming in next build.')}
+          >
+            <Text style={styles.linkLabel}>Unlock Method Pro — $3.99</Text>
+          </TouchableOpacity>
+        )}
 
       </ScrollView>
     </SafeAreaView>
@@ -141,7 +209,6 @@ const styles = StyleSheet.create({
   cardInner:   { paddingHorizontal: 20 },
   presetRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     padding: 14,
     gap: 8,
   },
@@ -153,9 +220,10 @@ const styles = StyleSheet.create({
     borderColor: Colors.glassBorder,
     paddingVertical: 12,
     alignItems: 'center',
+    gap: 2,
   },
   presetSelected: { borderColor: Colors.glassBorderLight },
-  presetLabel: {
+  presetNum: {
     fontSize: 15,
     fontWeight: '600',
     color: Colors.dim,
@@ -164,9 +232,73 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '400',
     color: Colors.ghost,
-    marginTop: 2,
   },
-  presetLabelSelected: { color: Colors.pureWhite },
+  presetMerit: {
+    fontSize: 8,
+    fontWeight: '400',
+    color: Colors.ghost,
+    marginTop: 4,
+    letterSpacing: 0.2,
+  },
+  presetMeritOn: { color: 'rgba(255,255,255,0.55)' },
+  presetTextOn:  { color: Colors.pureWhite },
+  divider: {
+    height: 0.5,
+    backgroundColor: Colors.glassBorder,
+    marginHorizontal: 14,
+  },
+  customRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  customLeft: { gap: 3 },
+  customLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.dim,
+  },
+  stepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  stepBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    borderWidth: 0.5,
+    borderColor: Colors.glassBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepValue: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 0.5,
+    borderColor: Colors.glassBorder,
+    minWidth: 72,
+    alignItems: 'center',
+  },
+  stepValueText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: Colors.dim,
+  },
+  customLocked: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  customLockedLabel: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: Colors.ghost,
+  },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
