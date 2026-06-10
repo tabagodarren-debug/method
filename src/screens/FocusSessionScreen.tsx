@@ -158,9 +158,9 @@ export default function FocusSessionScreen() {
           }
         >
           {/* The blurred background shows through the digit shapes */}
-          <BlurView intensity={40} tint="dark" style={{ width: TIMER_W, height: TIMER_H }} />
+          <BlurView intensity={28} tint="dark" style={{ width: TIMER_W, height: TIMER_H }} />
           <LinearGradient
-            colors={['rgba(0,0,0,0.38)', 'rgba(0,0,0,0.18)']}
+            colors={['rgba(0,0,0,0.24)', 'rgba(0,0,0,0.10)']}
             style={StyleSheet.absoluteFill}
             start={{ x: 0.5, y: 0 }}
             end={{ x: 0.5, y: 1 }}
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     width: TIMER_W,
     height: TIMER_H,
     left: SW / 2 - TIMER_W / 2,
-    top: SH / 2 - TIMER_H / 2,
+    top: SH * 0.18,
     alignItems: 'center',
     justifyContent: 'center',
   },

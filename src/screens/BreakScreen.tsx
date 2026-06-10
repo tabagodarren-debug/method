@@ -76,9 +76,9 @@ export default function BreakScreen() {
             </View>
           }
         >
-          <BlurView intensity={40} tint="dark" style={{ width: TIMER_W, height: TIMER_H }} />
+          <BlurView intensity={28} tint="dark" style={{ width: TIMER_W, height: TIMER_H }} />
           <LinearGradient
-            colors={['rgba(0,0,0,0.38)', 'rgba(0,0,0,0.18)']}
+            colors={['rgba(0,0,0,0.24)', 'rgba(0,0,0,0.10)']}
             style={StyleSheet.absoluteFill}
             start={{ x: 0.5, y: 0 }}
             end={{ x: 0.5, y: 1 }}
