@@ -15,6 +15,7 @@ export type SessionStats = {
   longestStreak: number;
   lastSessionDate: string;
   totalMinutes: number;
+  dailySessions: Record<string, number>;
 };
 
 export type OnboardingStackParamList = {

@@ -12,6 +12,7 @@ export const DEFAULT_STATS: SessionStats = {
   longestStreak: 0,
   lastSessionDate: '',
   totalMinutes: 0,
+  dailySessions: {},
 };
 
 export const loadStats = async (): Promise<SessionStats> => {
@@ -34,6 +35,8 @@ export const recordSession = async (dateStr: string): Promise<SessionStats> => {
   stats.totalEarned += SESSION_EARN;
   stats.sessionsCompleted += 1;
   stats.totalMinutes += SESSION_MINUTES;
+  stats.dailySessions = stats.dailySessions ?? {};
+  stats.dailySessions[dateStr] = (stats.dailySessions[dateStr] ?? 0) + 1;
 
   if (stats.lastSessionDate !== dateStr) {
     const isConsecutive = isYesterday(stats.lastSessionDate, dateStr);
