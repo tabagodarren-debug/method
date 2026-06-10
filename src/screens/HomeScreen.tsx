@@ -223,9 +223,11 @@ const styles = StyleSheet.create({
   },
   statPillMerit: {
     fontSize: 11,
-    fontWeight: '400',
-    color: 'rgba(255,255,255,0.40)',
-    marginTop: 3,
+    fontWeight: '600',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.65)',
+    marginTop: 4,
   },
   startBtn: { marginBottom: 16 },
   shareRow: {
