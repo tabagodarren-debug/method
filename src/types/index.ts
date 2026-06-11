@@ -6,11 +6,13 @@ export type PersonaData = {
   name: string;
   goal: string;
   timeline: Timeline;
+  startDate?: string;
 };
 
 export type SessionStats = {
   totalEarned: number;
   sessionsCompleted: number;
+  sessionsAbandoned: number;
   currentStreak: number;
   longestStreak: number;
   lastSessionDate: string;

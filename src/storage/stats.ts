@@ -3,9 +3,12 @@ import type { SessionStats } from '../types';
 
 const STATS_KEY = '@method/stats';
 
+export const ABANDON_PENALTY = 10;
+
 export const DEFAULT_STATS: SessionStats = {
   totalEarned: 0,
   sessionsCompleted: 0,
+  sessionsAbandoned: 0,
   currentStreak: 0,
   longestStreak: 0,
   lastSessionDate: '',
@@ -43,6 +46,14 @@ export const recordSession = async (dateStr: string, earnedAmount: number, inter
     stats.lastSessionDate = dateStr;
   }
 
+  await saveStats(stats);
+  return stats;
+};
+
+export const recordAbandon = async (): Promise<SessionStats> => {
+  const stats = await loadStats();
+  stats.sessionsAbandoned += 1;
+  stats.totalEarned = Math.max(0, stats.totalEarned - ABANDON_PENALTY);
   await saveStats(stats);
   return stats;
 };

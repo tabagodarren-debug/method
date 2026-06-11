@@ -5,14 +5,23 @@ const PERSONA_KEY = '@method/persona';
 const ONBOARDED_KEY = '@method/onboarded';
 
 export const savePersona = async (data: PersonaData): Promise<void> => {
-  await AsyncStorage.setItem(PERSONA_KEY, JSON.stringify(data));
+  const withStart: PersonaData = {
+    ...data,
+    startDate: data.startDate ?? new Date().toISOString().split('T')[0],
+  };
+  await AsyncStorage.setItem(PERSONA_KEY, JSON.stringify(withStart));
 };
 
 export const loadPersona = async (): Promise<PersonaData | null> => {
   const raw = await AsyncStorage.getItem(PERSONA_KEY);
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as PersonaData;
+    const parsed = JSON.parse(raw) as PersonaData;
+    if (!parsed.startDate) {
+      parsed.startDate = new Date().toISOString().split('T')[0];
+      await AsyncStorage.setItem(PERSONA_KEY, JSON.stringify(parsed));
+    }
+    return parsed;
   } catch {
     return null;
   }
