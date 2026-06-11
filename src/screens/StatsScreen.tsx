@@ -5,13 +5,30 @@ import { BlurView } from 'expo-blur';
 import { Colors } from '../constants/colors';
 import { Typography } from '../constants/typography';
 import { loadStats } from '../storage/stats';
+import { getRankProgress } from '../utils/ranks';
 import MeritAmount from '../components/MeritAmount';
+import RankProgressBar from '../components/RankProgressBar';
 import type { SessionStats } from '../types';
 
-const DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const BAR_MAX_HEIGHT = 96;
 const BAR_WIDTH = 30;
-const SAMPLE_HEIGHTS = [0.62, 0.86, 0.44, 1.0, 0.74, 0.38, 0.60];
+const WEEKDAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+type DayBar = { letter: string; sessions: number; isToday: boolean };
+
+function buildWeek(dailySessions: Record<string, number>): DayBar[] {
+  return Array.from({ length: 7 }, (_, i) => {
+    const daysAgo = 6 - i;
+    const d = new Date();
+    d.setDate(d.getDate() - daysAgo);
+    const key = d.toISOString().split('T')[0];
+    return {
+      letter: WEEKDAY_LETTERS[d.getDay()],
+      sessions: dailySessions[key] ?? 0,
+      isToday: daysAgo === 0,
+    };
+  });
+}
 
 function StatRow({ label, value, isLast = false }: { label: string; value: string; isLast?: boolean }) {
   return (
@@ -32,6 +49,17 @@ export default function StatsScreen() {
   );
 
   const totalHours = stats ? (stats.totalMinutes / 60).toFixed(1) : '0.0';
+  const week = buildWeek(stats?.dailySessions ?? {});
+  const weekMax = Math.max(1, ...week.map(d => d.sessions));
+
+  const progress = getRankProgress(stats?.totalEarned ?? 0);
+
+  const completed = stats?.sessionsCompleted ?? 0;
+  const abandoned = stats?.sessionsAbandoned ?? 0;
+  const attempts = completed + abandoned;
+  const disciplineLabel = attempts > 0
+    ? `${Math.round((completed / attempts) * 100)}%`
+    : '—';
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -48,37 +76,65 @@ export default function StatsScreen() {
           style={styles.earnedValueRow}
         />
 
+        {/* Rank card */}
+        <View style={[styles.card, styles.rankCard]}>
+          <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFill} />
+          <View style={styles.cardOverlay} />
+          <View style={styles.cardInner}>
+            <View style={styles.rankHeader}>
+              <Text style={styles.rankKicker}>
+                RANK {progress.current.level.toString().padStart(2, '0')}
+              </Text>
+              <Text style={styles.rankTitle}>{progress.current.title.toUpperCase()}</Text>
+            </View>
+            <RankProgressBar
+              percent={progress.percent}
+              leftLabel={progress.isMax ? 'Max rank reached' : progress.current.title}
+              rightLabel={
+                progress.isMax ? 'THE LEGACY' : `${progress.meritToNext} to ${progress.next!.title}`
+              }
+            />
+          </View>
+        </View>
+
+        {/* Weekly chart — real session data */}
         <View style={styles.card}>
           <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFill} />
           <View style={styles.cardOverlay} />
           <View style={styles.cardInner}>
-            <Text style={styles.chartLabel}>THIS WEEK</Text>
+            <Text style={styles.chartLabel}>LAST 7 DAYS</Text>
             <View style={styles.chartRow}>
-              {DAYS.map((day, i) => (
+              {week.map((day, i) => (
                 <View key={i} style={styles.barCol}>
                   <View style={styles.barTrack}>
-                    <View
-                      style={[
-                        styles.bar,
-                        {
-                          height: BAR_MAX_HEIGHT * SAMPLE_HEIGHTS[i],
-                          opacity: i === 3 ? 0.95 : 0.62,
-                        },
-                      ]}
-                    />
+                    {day.sessions > 0 && (
+                      <View
+                        style={[
+                          styles.bar,
+                          {
+                            height: Math.max(6, BAR_MAX_HEIGHT * (day.sessions / weekMax)),
+                            opacity: day.isToday ? 0.98 : 0.55,
+                          },
+                        ]}
+                      />
+                    )}
                   </View>
-                  <Text style={styles.dayLabel}>{day}</Text>
+                  <Text style={[styles.dayLabel, day.isToday && styles.dayLabelToday]}>
+                    {day.letter}
+                  </Text>
                 </View>
               ))}
             </View>
           </View>
         </View>
 
+        {/* Stat rows */}
         <View style={[styles.card, styles.statCard]}>
           <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFill} />
           <View style={styles.cardOverlay} />
           <View style={styles.statCardInner}>
-            <StatRow label="Sessions"    value={String(stats?.sessionsCompleted ?? 0)} />
+            <StatRow label="Sessions"    value={String(completed)} />
+            <StatRow label="Discipline"  value={disciplineLabel} />
             <StatRow label="Streak"      value={`${stats?.currentStreak ?? 0} days`} />
             <StatRow label="Best Streak" value={`${stats?.longestStreak ?? 0} days`} />
             <StatRow label="Total Hours" value={`${totalHours} h`} isLast />
@@ -110,8 +166,23 @@ const styles = StyleSheet.create({
     borderColor: Colors.glassBorder,
     marginBottom: 12,
   },
+  rankCard: {},
   cardOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: Colors.glassBg },
   cardInner:   { padding: 20 },
+  rankHeader: { marginBottom: 18 },
+  rankKicker: {
+    fontSize: 10,
+    fontWeight: '500',
+    letterSpacing: 2.5,
+    color: Colors.dim,
+    marginBottom: 6,
+  },
+  rankTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+    color: Colors.pureWhite,
+  },
   chartLabel: {
     ...Typography.chartLabel,
     color: Colors.dim,
@@ -120,7 +191,7 @@ const styles = StyleSheet.create({
   chartRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    gap: 13,
+    justifyContent: 'space-between',
     height: BAR_MAX_HEIGHT + 20,
   },
   barCol:   { alignItems: 'center', gap: 6 },
@@ -137,6 +208,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   dayLabel:      { ...Typography.dayLabel, color: Colors.dim },
+  dayLabelToday: { color: Colors.pureWhite, fontWeight: '700' },
   statCard:      {},
   statCardInner: { paddingHorizontal: 20 },
   statRow: {

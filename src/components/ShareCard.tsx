@@ -10,6 +10,7 @@ import * as Sharing from 'expo-sharing';
 import MeritAmount from './MeritAmount';
 import WeekStrip from './WeekStrip';
 import { Colors } from '../constants/colors';
+import { getRankProgress } from '../utils/ranks';
 import type { SessionStats, PersonaData } from '../types';
 
 const { width: SW } = Dimensions.get('window');
@@ -31,6 +32,8 @@ export default function ShareCard({ visible, onClose, stats, persona }: Props) {
       await Sharing.shareAsync(uri, { mimeType: 'image/png' });
     } catch (_) {}
   };
+
+  const rank = getRankProgress(stats.totalEarned).current;
 
   const streakLabel = stats.currentStreak > 0
     ? `Day ${stats.currentStreak} Streak`
@@ -61,9 +64,13 @@ export default function ShareCard({ visible, onClose, stats, persona }: Props) {
               <Text style={styles.tagline}>LOCKED IN</Text>
             </View>
 
-            {persona && (
-              <Text style={styles.nameLabel}>{persona.name.toUpperCase()}</Text>
-            )}
+            <View style={styles.identityRow}>
+              {persona && (
+                <Text style={styles.nameLabel}>{persona.name.toUpperCase()}</Text>
+              )}
+              {persona && <View style={styles.identityDot} />}
+              <Text style={styles.rankLabel}>{rank.title.toUpperCase()}</Text>
+            </View>
 
             <MeritAmount
               amount={stats.totalEarned}
@@ -146,12 +153,29 @@ const styles = StyleSheet.create({
     letterSpacing: 2.5,
     color: 'rgba(255,255,255,0.35)',
   },
+  identityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    marginBottom: 12,
+  },
   nameLabel: {
     fontSize: 10,
     fontWeight: '500',
     letterSpacing: 2.4,
     color: 'rgba(255,255,255,0.45)',
-    marginBottom: 12,
+  },
+  identityDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: 'rgba(255,255,255,0.30)',
+  },
+  rankLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 2.4,
+    color: 'rgba(255,255,255,0.70)',
   },
   meritRow: {
     marginVertical: 4,

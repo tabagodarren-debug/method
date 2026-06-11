@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import type { StackNavigationProp, RouteProp } from '@react-navigation/stack';
+import type { RouteProp } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
 import PillButton from '../components/PillButton';
 import MeritAmount from '../components/MeritAmount';
 import RankProgressBar from '../components/RankProgressBar';
