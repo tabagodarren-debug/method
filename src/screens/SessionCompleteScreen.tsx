@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
+import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import PillButton from '../components/PillButton';
 import MeritAmount from '../components/MeritAmount';
 import RankProgressBar from '../components/RankProgressBar';
@@ -55,15 +56,16 @@ export default function SessionCompleteScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.center}>
-        <MeritAmount
-          amount={earnedThisSession}
-          prefix="+"
-          symbolSize={50}
-          textStyle={styles.earnAmount}
-          color={Colors.pureWhite}
-          style={styles.earnRow}
-        />
-        <View style={styles.totalRow}>
+        <Animated.View entering={FadeInDown.duration(550).springify().damping(18)} style={styles.earnRow}>
+          <MeritAmount
+            amount={earnedThisSession}
+            prefix="+"
+            symbolSize={50}
+            textStyle={styles.earnAmount}
+            color={Colors.pureWhite}
+          />
+        </Animated.View>
+        <Animated.View entering={FadeIn.delay(250).duration(500)} style={styles.totalRow}>
           <Text style={styles.totalLabel}>Total: </Text>
           <MeritAmount
             amount={totalEarned}
@@ -72,12 +74,16 @@ export default function SessionCompleteScreen() {
             color={Colors.primaryText}
             style={{ gap: 4 }}
           />
-        </View>
+        </Animated.View>
 
-        {affirmation ? <Text style={styles.affirmation}>{affirmation}</Text> : null}
+        {affirmation ? (
+          <Animated.Text entering={FadeIn.delay(420).duration(550)} style={styles.affirmation}>
+            {affirmation}
+          </Animated.Text>
+        ) : null}
 
         {/* Progress toward next rank */}
-        <View style={styles.progressWrap}>
+        <Animated.View entering={FadeInDown.delay(560).duration(500)} style={styles.progressWrap}>
           <RankProgressBar
             percent={progress.percent}
             leftLabel={progress.current.title}
@@ -85,9 +91,9 @@ export default function SessionCompleteScreen() {
               progress.isMax ? 'MAX RANK' : `${progress.meritToNext} to ${progress.next!.title}`
             }
           />
-        </View>
+        </Animated.View>
 
-        <View style={styles.buttons}>
+        <Animated.View entering={FadeInDown.delay(640).duration(500)} style={styles.buttons}>
           <PillButton
             label="Take Break"
             variant="secondary"
@@ -102,7 +108,7 @@ export default function SessionCompleteScreen() {
             width="100%"
             height={54}
           />
-        </View>
+        </Animated.View>
       </View>
 
       <RankUpCard

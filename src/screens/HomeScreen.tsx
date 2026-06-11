@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import PillButton from '../components/PillButton';
 import MeritAmount from '../components/MeritAmount';
 import WeekStrip from '../components/WeekStrip';
@@ -86,15 +87,17 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.center}>
-        <Text style={styles.greeting}>{getGreeting()}</Text>
-        <View style={styles.identityRow}>
+        <Animated.Text entering={FadeInDown.duration(500)} style={styles.greeting}>
+          {getGreeting()}
+        </Animated.Text>
+        <Animated.View entering={FadeInDown.delay(80).duration(500)} style={styles.identityRow}>
           {persona && <Text style={styles.personaLabel}>{persona.name.toUpperCase()}</Text>}
           {persona && <View style={styles.identityDot} />}
           <Text style={styles.rankLabel}>{progress.current.title.toUpperCase()}</Text>
-        </View>
+        </Animated.View>
 
         {/* Glass merit card */}
-        <View style={styles.meritGlass}>
+        <Animated.View entering={FadeInDown.delay(160).duration(550)} style={styles.meritGlass}>
           <BlurView intensity={32} tint="dark" style={StyleSheet.absoluteFill} />
           <LinearGradient
             colors={['rgba(255,255,255,0.14)', 'rgba(255,255,255,0.04)']}
@@ -123,33 +126,37 @@ export default function HomeScreen() {
             leftLabel={progress.isMax ? 'Max rank reached' : `${progress.current.title}`}
             rightLabel={progress.isMax ? 'THE LEGACY' : `${progress.meritToNext} to ${progress.next!.title}`}
           />
-        </View>
+        </Animated.View>
 
         {/* Goal countdown */}
         {countdown && (
-          <Text style={styles.countdown}>
+          <Animated.Text entering={FadeInDown.delay(240).duration(500)} style={styles.countdown}>
             <Text style={styles.countdownNum}>{countdown.daysRemaining}</Text>
             {countdown.daysRemaining === 1 ? ' day' : ' days'} to your goal
-          </Text>
+          </Animated.Text>
         )}
 
         {/* Today + Yesterday stat pills */}
-        <View style={styles.statRow}>
+        <Animated.View entering={FadeInDown.delay(320).duration(500)} style={styles.statRow}>
           <StatPill label="Today" sessions={todaySessions} merit={todayMerit} />
           <StatPill label="Yesterday" sessions={yesterdaySessions} merit={yesterdayMerit} />
-        </View>
+        </Animated.View>
 
-        <PillButton
-          label="Lock in"
-          onPress={() => nav.navigate('FocusSession')}
-          style={styles.startBtn}
-        />
+        <Animated.View entering={FadeInDown.delay(400).duration(500)}>
+          <PillButton
+            label="Lock in"
+            onPress={() => nav.navigate('FocusSession')}
+            style={styles.startBtn}
+          />
+        </Animated.View>
 
         {/* Share progress */}
-        <TouchableOpacity style={styles.shareRow} onPress={() => setShowShare(true)}>
-          <Ionicons name="share-outline" size={13} color="rgba(255,255,255,0.35)" />
-          <Text style={styles.shareLabel}>Share progress</Text>
-        </TouchableOpacity>
+        <Animated.View entering={FadeInDown.delay(460).duration(500)}>
+          <TouchableOpacity style={styles.shareRow} onPress={() => setShowShare(true)}>
+            <Ionicons name="share-outline" size={13} color="rgba(255,255,255,0.35)" />
+            <Text style={styles.shareLabel}>Share progress</Text>
+          </TouchableOpacity>
+        </Animated.View>
       </View>
 
       {stats && (
