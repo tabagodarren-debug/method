@@ -1,8 +1,9 @@
 import React, { useRef, useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Animated,
-  ImageSourcePropType, Dimensions, StatusBar,
+  ImageSourcePropType, Dimensions, StatusBar, Alert,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -13,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../constants/colors';
 import { Typography } from '../constants/typography';
 import { loadInterval } from '../storage/settings';
+import { recordAbandon, ABANDON_PENALTY } from '../storage/stats';
 import { calculateMerit } from '../utils/merit';
 import { playTrack, pauseAudio, resumeAudio, skipTrack, stopAudio, getCurrentTrackName, hasTracks } from '../services/audio';
 import type { RootStackParamList } from '../types';
@@ -134,6 +136,28 @@ export default function FocusSessionScreen() {
     setTrackName(getCurrentTrackName());
   };
 
+  const handleEndSession = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    Alert.alert(
+      'Clock out early?',
+      `Walk away now and you forfeit this session — no Merit earned, and ${ABANDON_PENALTY} docked from your balance. Your future self is watching.`,
+      [
+        { text: 'Stay locked in', style: 'cancel' },
+        {
+          text: `Clock out (−${ABANDON_PENALTY})`,
+          style: 'destructive',
+          onPress: async () => {
+            clearInterval(timerRef.current!);
+            clearInterval(slideRef.current!);
+            await stopAudio();
+            await recordAbandon();
+            nav.goBack();
+          },
+        },
+      ],
+    );
+  };
+
   const timeStr = formatTime(timeLeft);
 
   return (
@@ -196,7 +220,7 @@ export default function FocusSessionScreen() {
               <Text style={styles.trackName} numberOfLines={1}>{trackName}</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.endBtn} onPress={() => nav.goBack()}>
+          <TouchableOpacity style={styles.endBtn} onPress={handleEndSession}>
             <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
             <LinearGradient
               colors={['rgba(255,255,255,0.12)', 'rgba(255,255,255,0.04)']}

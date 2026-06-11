@@ -4,11 +4,16 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { StackNavigationProp, RouteProp } from '@react-navigation/stack';
 import PillButton from '../components/PillButton';
 import MeritAmount from '../components/MeritAmount';
+import RankProgressBar from '../components/RankProgressBar';
+import RankUpCard from '../components/RankUpCard';
 import { Colors } from '../constants/colors';
 import { Typography } from '../constants/typography';
 import { loadPersona } from '../storage/persona';
 import { recordSession, loadStats } from '../storage/stats';
-import type { RootStackParamList } from '../types';
+import { getRankProgress, didRankUp } from '../utils/ranks';
+import { getRankAffirmation } from '../utils/affirmations';
+import type { RootStackParamList, PersonaData } from '../types';
+import type { Rank as RankType } from '../utils/ranks';
 
 type Route = RouteProp<RootStackParamList, 'SessionComplete'>;
 
@@ -17,16 +22,34 @@ export default function SessionCompleteScreen() {
   const route = useRoute<Route>();
   const { earnedThisSession, intervalMinutes } = route.params;
 
-  const [personaName, setPersonaName] = useState('');
+  const [persona, setPersona] = useState<PersonaData | null>(null);
   const [totalEarned, setTotalEarned] = useState(0);
+  const [affirmation, setAffirmation] = useState('');
+  const [rankedUp, setRankedUp] = useState<RankType | null>(null);
+  const [showCeremony, setShowCeremony] = useState(false);
 
   useEffect(() => {
     const today = new Date().toISOString().slice(0, 10);
-    Promise.all([loadPersona(), recordSession(today, earnedThisSession, intervalMinutes)]).then(([persona, stats]) => {
-      setPersonaName(persona?.name ?? '');
-      setTotalEarned(stats.totalEarned);
-    });
+    Promise.all([loadPersona(), recordSession(today, earnedThisSession, intervalMinutes)]).then(
+      ([p, stats]) => {
+        setPersona(p);
+        setTotalEarned(stats.totalEarned);
+
+        const prevTotal = stats.totalEarned - earnedThisSession;
+        const newRank = didRankUp(prevTotal, stats.totalEarned);
+        const currentLevel = getRankProgress(stats.totalEarned).current.level;
+
+        if (p) setAffirmation(getRankAffirmation(p, currentLevel));
+
+        if (newRank) {
+          setRankedUp(newRank);
+          setTimeout(() => setShowCeremony(true), 900);
+        }
+      }
+    );
   }, []);
+
+  const progress = getRankProgress(totalEarned);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -49,9 +72,20 @@ export default function SessionCompleteScreen() {
             style={{ gap: 4 }}
           />
         </View>
-        {personaName ? (
-          <Text style={styles.affirmation}>{personaName} just got closer.</Text>
-        ) : null}
+
+        {affirmation ? <Text style={styles.affirmation}>{affirmation}</Text> : null}
+
+        {/* Progress toward next rank */}
+        <View style={styles.progressWrap}>
+          <RankProgressBar
+            percent={progress.percent}
+            leftLabel={progress.current.title}
+            rightLabel={
+              progress.isMax ? 'MAX RANK' : `${progress.meritToNext} to ${progress.next!.title}`
+            }
+          />
+        </View>
+
         <View style={styles.buttons}>
           <PillButton
             label="Take Break"
@@ -69,6 +103,16 @@ export default function SessionCompleteScreen() {
           />
         </View>
       </View>
+
+      <RankUpCard
+        visible={showCeremony}
+        rank={rankedUp}
+        onShare={() => {
+          setShowCeremony(false);
+          nav.replace('Break');
+        }}
+        onContinue={() => setShowCeremony(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -93,7 +137,13 @@ const styles = StyleSheet.create({
   affirmation: {
     ...Typography.smallAffirmation,
     color: Colors.dim,
-    marginBottom: 52,
+    marginBottom: 36,
+    textAlign: 'center',
+    paddingHorizontal: 12,
+  },
+  progressWrap: {
+    width: '100%',
+    marginBottom: 44,
   },
   buttons: {
     width: '100%',
