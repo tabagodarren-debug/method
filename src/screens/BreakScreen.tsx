@@ -7,20 +7,16 @@ import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { Colors } from '../constants/colors';
 import { Typography } from '../constants/typography';
+import { loadPersona } from '../storage/persona';
+import { loadStats } from '../storage/stats';
+import { getRankProgress } from '../utils/ranks';
+import { getRankAffirmation } from '../utils/affirmations';
 import type { RootStackParamList } from '../types';
 
 const BREAK_SECONDS = 5 * 60;
 const { width: SW, height: SH } = Dimensions.get('screen');
 const TIMER_W = 320;
 const TIMER_H = 110;
-
-const BREAK_TEMPLATES = [
-  "The goal doesn't care how you feel.",
-  "Rest is part of the method.",
-  "The version of you that made it took breaks too.",
-  "Reset. Come back locked in.",
-  "You're further along than you think.",
-];
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -31,11 +27,17 @@ function formatTime(seconds: number): string {
 export default function BreakScreen() {
   const nav = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [timeLeft, setTimeLeft] = useState(BREAK_SECONDS);
-  const [affirmation] = useState(
-    () => BREAK_TEMPLATES[Math.floor(Math.random() * BREAK_TEMPLATES.length)]
-  );
+  const [affirmation, setAffirmation] = useState('');
   const endTimeRef = useRef<number | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    Promise.all([loadPersona(), loadStats()]).then(([persona, stats]) => {
+      if (!persona) return;
+      const level = getRankProgress(stats.totalEarned).current.level;
+      setAffirmation(getRankAffirmation(persona, level));
+    });
+  }, []);
 
   useEffect(() => {
     endTimeRef.current = Date.now() + BREAK_SECONDS * 1000;
