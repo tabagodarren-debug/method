@@ -9,10 +9,13 @@ import PillButton from '../components/PillButton';
 import MeritAmount from '../components/MeritAmount';
 import WeekStrip from '../components/WeekStrip';
 import ShareCard from '../components/ShareCard';
+import RankProgressBar from '../components/RankProgressBar';
 import { Colors } from '../constants/colors';
 import { Typography } from '../constants/typography';
 import { loadPersona } from '../storage/persona';
 import { loadStats } from '../storage/stats';
+import { getRankProgress } from '../utils/ranks';
+import { getGoalCountdown } from '../utils/goal';
 import type { RootStackParamList, PersonaData, SessionStats } from '../types';
 
 function getGreeting(): string {
@@ -66,6 +69,8 @@ export default function HomeScreen() {
     }, [])
   );
 
+  const total = stats?.totalEarned ?? 0;
+  const progress = getRankProgress(total);
   const streakLabel = stats
     ? stats.currentStreak === 1 ? 'Day 1 Streak' : `Day ${stats.currentStreak} Streak`
     : '';
@@ -76,13 +81,17 @@ export default function HomeScreen() {
   const yesterdaySessions = dailySessions[yesterdayKey()] ?? 0;
   const yesterdayMerit = yesterdaySessions * 25;
 
+  const countdown = persona ? getGoalCountdown(persona) : null;
+
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.center}>
         <Text style={styles.greeting}>{getGreeting()}</Text>
-        {persona && (
-          <Text style={styles.personaLabel}>{persona.name.toUpperCase()}</Text>
-        )}
+        <View style={styles.identityRow}>
+          {persona && <Text style={styles.personaLabel}>{persona.name.toUpperCase()}</Text>}
+          {persona && <View style={styles.identityDot} />}
+          <Text style={styles.rankLabel}>{progress.current.title.toUpperCase()}</Text>
+        </View>
 
         {/* Glass merit card */}
         <View style={styles.meritGlass}>
@@ -95,7 +104,7 @@ export default function HomeScreen() {
           />
           <View style={styles.meritShine} />
           <MeritAmount
-            amount={stats?.totalEarned ?? 0}
+            amount={total}
             symbolSize={72}
             textStyle={styles.counter}
             color={Colors.pureWhite}
@@ -106,7 +115,23 @@ export default function HomeScreen() {
           <View style={styles.weekStripRow}>
             <WeekStrip dailySessions={dailySessions} />
           </View>
+
+          <View style={styles.cardDivider} />
+
+          <RankProgressBar
+            percent={progress.percent}
+            leftLabel={progress.isMax ? 'Max rank reached' : `${progress.current.title}`}
+            rightLabel={progress.isMax ? 'THE LEGACY' : `${progress.meritToNext} to ${progress.next!.title}`}
+          />
         </View>
+
+        {/* Goal countdown */}
+        {countdown && (
+          <Text style={styles.countdown}>
+            <Text style={styles.countdownNum}>{countdown.daysRemaining}</Text>
+            {countdown.daysRemaining === 1 ? ' day' : ' days'} to your goal
+          </Text>
+        )}
 
         {/* Today + Yesterday stat pills */}
         <View style={styles.statRow}>
@@ -155,10 +180,25 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textAlign: 'center',
   },
+  identityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 24,
+  },
   personaLabel: {
     ...Typography.personaLabel,
     color: Colors.pureWhite,
-    marginBottom: 24,
+  },
+  identityDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: Colors.dim,
+  },
+  rankLabel: {
+    ...Typography.personaLabel,
+    color: 'rgba(255,255,255,0.55)',
   },
   meritGlass: {
     borderRadius: 32,
@@ -166,9 +206,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.18)',
     paddingHorizontal: 32,
-    paddingVertical: 24,
+    paddingTop: 24,
+    paddingBottom: 22,
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 14,
+    width: '100%',
   },
   meritShine: {
     position: 'absolute',
@@ -187,11 +229,30 @@ const styles = StyleSheet.create({
   },
   weekStripRow: {
     marginTop: 2,
+    marginBottom: 4,
+  },
+  cardDivider: {
+    height: 1,
+    alignSelf: 'stretch',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    marginVertical: 16,
+  },
+  countdown: {
+    fontSize: 12,
+    fontWeight: '300',
+    color: 'rgba(255,255,255,0.40)',
+    marginBottom: 18,
+    letterSpacing: 0.3,
+  },
+  countdownNum: {
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.70)',
   },
   statRow: {
     flexDirection: 'row',
     gap: 10,
     marginBottom: 20,
+    alignSelf: 'stretch',
   },
   statPill: {
     flex: 1,
