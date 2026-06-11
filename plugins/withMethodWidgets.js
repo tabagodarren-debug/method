@@ -19,7 +19,8 @@ function withMethodWidgets(config) {
   config = withAppGroupEntitlement(config);
   config = withLiveActivityInfoPlist(config);
   config = withWidgetFiles(config);
-  // Tasks 12-13 will add: withXcodeTarget, withPodfileRegistration
+  config = withXcodeTarget(config);
+  // Task 13 will add: withPodfileRegistration
   return config;
 }
 
@@ -106,6 +107,91 @@ function withWidgetFiles(config) {
       return c;
     },
   ]);
+}
+
+// ── 4. Add MethodWidget extension target to Xcode project ────────────────────
+function withXcodeTarget(config) {
+  return withXcodeProject(config, (c) => {
+    const project = c.modResults;
+    const appName = c.modRequest.projectName;
+
+    // Idempotency: skip if target already exists
+    const targets = project.pbxNativeTargetSection();
+    const alreadyExists = Object.values(targets).some(
+      (t) => t && (t.name === EXTENSION_NAME || t.name === `"${EXTENSION_NAME}"`)
+    );
+    if (alreadyExists) return c;
+
+    // Add extension target
+    const extTarget = project.addTarget(
+      EXTENSION_NAME,
+      'app_extension',
+      EXTENSION_NAME,
+      EXTENSION_BUNDLE_ID
+    );
+
+    // Set build settings on all configurations for this target
+    const buildConfigs   = project.pbxXCBuildConfigurationSection();
+    const configListUuid = extTarget.pbxNativeTarget.buildConfigurationList;
+    const configList     = project.pbxXCConfigurationList()[configListUuid];
+
+    (configList.buildConfigurations || []).forEach(({ value: cfgUuid }) => {
+      const bc = buildConfigs[cfgUuid];
+      if (!bc || !bc.buildSettings) return;
+      bc.buildSettings.SWIFT_VERSION                  = '"5.0"';
+      bc.buildSettings.IPHONEOS_DEPLOYMENT_TARGET     = '"16.2"';
+      bc.buildSettings.INFOPLIST_FILE                 = `"${EXTENSION_NAME}/Info.plist"`;
+      bc.buildSettings.CODE_SIGN_ENTITLEMENTS         = `"${EXTENSION_NAME}/${EXTENSION_NAME}.entitlements"`;
+      bc.buildSettings.PRODUCT_BUNDLE_IDENTIFIER      = `"${EXTENSION_BUNDLE_ID}"`;
+      bc.buildSettings.SKIP_INSTALL                   = 'YES';
+      bc.buildSettings.TARGETED_DEVICE_FAMILY         = '"1,2"';
+      bc.buildSettings.MARKETING_VERSION              = '"1.0"';
+      bc.buildSettings.CURRENT_PROJECT_VERSION        = '"1"';
+    });
+
+    // Add PBX group for extension files
+    const extGroup = project.addPbxGroup([], EXTENSION_NAME, EXTENSION_NAME);
+    const rootGroupUuid = project.getFirstProject().firstProject.mainGroup;
+    project.addToPbxGroup(extGroup.uuid, rootGroupUuid);
+
+    // Add Swift source files to extension target
+    const extSources = [
+      'MethodWidgetBundle.swift',
+      'MethodWidget.swift',
+      'MethodLiveActivityAttributes.swift',
+      'MethodLiveActivityWidget.swift',
+      'MethodSharedData.swift',
+    ];
+    for (const f of extSources) {
+      project.addSourceFile(
+        `${EXTENSION_NAME}/${f}`,
+        { target: extTarget.uuid },
+        extGroup.uuid
+      );
+    }
+
+    // Link WidgetKit and ActivityKit
+    project.addFramework('WidgetKit.framework', {
+      target: extTarget.uuid, link: true,
+    });
+    project.addFramework('ActivityKit.framework', {
+      target: extTarget.uuid, link: true,
+    });
+
+    // Add native module Swift files to main app target
+    const mainTarget = project.getFirstTarget().firstTarget;
+    const moduleFiles = [
+      'MethodSharedDataModule.swift',
+      'MethodLiveActivityModule.swift',
+      'MethodModulesProvider.swift',
+      'MethodLiveActivityAttributes.swift',
+    ];
+    for (const f of moduleFiles) {
+      project.addSourceFile(`${appName}/${f}`, { target: mainTarget.uuid });
+    }
+
+    return c;
+  });
 }
 
 // ── helpers ───────────────────────────────────────────────────────────────────
