@@ -20,7 +20,7 @@ function withMethodWidgets(config) {
   config = withLiveActivityInfoPlist(config);
   config = withWidgetFiles(config);
   config = withXcodeTarget(config);
-  // Task 13 will add: withPodfileRegistration
+  config = withPodfileRegistration(config);
   return config;
 }
 
@@ -190,6 +190,33 @@ function withXcodeTarget(config) {
       project.addSourceFile(`${appName}/${f}`, { target: mainTarget.uuid });
     }
 
+    return c;
+  });
+}
+
+// ── 5. Podfile post_install: register custom modules in ExpoModulesProvider ──
+function withPodfileRegistration(config) {
+  return withPodfile(config, (c) => {
+    const appName = c.modRequest.projectName;
+    const snippet = `
+# Method: register custom native modules in ExpoModulesProvider
+post_install do |installer|
+  provider_path = File.join(File.dirname(__FILE__), '${appName}', 'ExpoModulesProvider.swift')
+  if File.exist?(provider_path)
+    content = File.read(provider_path)
+    unless content.include?('MethodSharedDataModule')
+      content.sub!(
+        /(\\s+return \\[)/,
+        "\\n      MethodSharedDataModule.self,\\n      MethodLiveActivityModule.self,\\1"
+      )
+      File.write(provider_path, content)
+    end
+  end
+end
+`;
+    if (!c.modResults.includes('MethodSharedDataModule')) {
+      c.modResults += snippet;
+    }
     return c;
   });
 }
