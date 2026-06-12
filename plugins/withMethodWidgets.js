@@ -90,8 +90,13 @@ function withXcodeTarget(config) {
       ? { uuid: extTargetUuid, pbxNativeTarget: project.pbxNativeTargetSection()[extTargetUuid] }
       : project.addTarget(EXTENSION_NAME, 'app_extension', EXTENSION_NAME, EXTENSION_BUNDLE_ID);
     extTargetUuid = extTarget.uuid;
+    const mainTargetUuid = findTargetUuidByName(project, appName);
 
     configureExtensionBuildSettings(project, extTarget.pbxNativeTarget);
+    if (mainTargetUuid) {
+      ensureTargetDependency(project, mainTargetUuid, extTargetUuid);
+      ensureEmbeddedAppExtension(project, mainTargetUuid, extTarget.pbxNativeTarget.productReference);
+    }
 
     let extGroup = findGroupByPath(project, EXTENSION_NAME);
     if (!extGroup) {
@@ -123,7 +128,6 @@ function withXcodeTarget(config) {
     addFrameworkOnce(project, 'WidgetKit.framework', extTargetUuid);
     addFrameworkOnce(project, 'ActivityKit.framework', extTargetUuid);
 
-    const mainTargetUuid = findTargetUuidByName(project, appName);
     const mainSourcesPhaseUuid = mainTargetUuid
       ? findBuildPhaseUuid(project, mainTargetUuid, 'PBXSourcesBuildPhase')
       : null;
@@ -152,7 +156,20 @@ function configureExtensionBuildSettings(project, nativeTarget) {
     const bc = buildConfigs[cfgUuid];
     if (!bc?.buildSettings) continue;
     bc.buildSettings.SWIFT_VERSION = '"5.0"';
+    bc.buildSettings.PRODUCT_NAME = `"${EXTENSION_NAME}"`;
+    bc.buildSettings.EXECUTABLE_NAME = `"${EXTENSION_NAME}"`;
+    bc.buildSettings.EXECUTABLE_PREFIX = '""';
+    bc.buildSettings.EXECUTABLE_EXTENSION = '""';
+    bc.buildSettings.WRAPPER_EXTENSION = 'appex';
+    bc.buildSettings.MACH_O_TYPE = 'mh_execute';
+    bc.buildSettings.DEFINES_MODULE = 'YES';
+    bc.buildSettings.APPLICATION_EXTENSION_API_ONLY = 'YES';
+    bc.buildSettings.SDKROOT = 'iphoneos';
+    bc.buildSettings.SUPPORTED_PLATFORMS = '"iphoneos iphonesimulator"';
+    bc.buildSettings.SUPPORTS_MACCATALYST = 'NO';
+    bc.buildSettings.GENERATE_INFOPLIST_FILE = 'NO';
     bc.buildSettings.IPHONEOS_DEPLOYMENT_TARGET = '"16.2"';
+    bc.buildSettings.LD_RUNPATH_SEARCH_PATHS = '"$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"';
     bc.buildSettings.INFOPLIST_FILE = `"${EXTENSION_NAME}/Info.plist"`;
     bc.buildSettings.CODE_SIGN_ENTITLEMENTS = `"${EXTENSION_NAME}/${EXTENSION_NAME}.entitlements"`;
     bc.buildSettings.PRODUCT_BUNDLE_IDENTIFIER = `"${EXTENSION_BUNDLE_ID}"`;
@@ -200,6 +217,126 @@ function ensureBuildPhase(project, targetUuid, phaseType, comment) {
   const existing = findBuildPhaseUuid(project, targetUuid, phaseType);
   if (existing) return existing;
   return project.addBuildPhase([], phaseType, comment, targetUuid).uuid;
+}
+
+function ensureTargetDependency(project, targetUuid, dependencyTargetUuid) {
+  const objects = project.hash.project.objects;
+  const nativeTarget = objects.PBXNativeTarget?.[targetUuid];
+  if (!nativeTarget) return;
+
+  objects.PBXContainerItemProxy ||= {};
+  objects.PBXTargetDependency ||= {};
+  nativeTarget.dependencies ||= [];
+
+  const alreadyDepends = nativeTarget.dependencies.some(({ value }) => {
+    const dependency = objects.PBXTargetDependency[value];
+    return dependency?.target === dependencyTargetUuid;
+  });
+  if (alreadyDepends) return;
+
+  const dependencyTarget = objects.PBXNativeTarget?.[dependencyTargetUuid];
+  if (!dependencyTarget) return;
+
+  const proxyUuid = project.generateUuid();
+  objects.PBXContainerItemProxy[proxyUuid] = {
+    isa: 'PBXContainerItemProxy',
+    containerPortal: project.hash.project.rootObject,
+    containerPortal_comment: project.hash.project.rootObject_comment || 'Project object',
+    proxyType: 1,
+    remoteGlobalIDString: dependencyTargetUuid,
+    remoteInfo: unquote(dependencyTarget.name),
+  };
+  objects.PBXContainerItemProxy[`${proxyUuid}_comment`] = 'PBXContainerItemProxy';
+
+  const dependencyUuid = project.generateUuid();
+  objects.PBXTargetDependency[dependencyUuid] = {
+    isa: 'PBXTargetDependency',
+    target: dependencyTargetUuid,
+    target_comment: unquote(dependencyTarget.name),
+    targetProxy: proxyUuid,
+    targetProxy_comment: 'PBXContainerItemProxy',
+  };
+  objects.PBXTargetDependency[`${dependencyUuid}_comment`] = 'PBXTargetDependency';
+  nativeTarget.dependencies.push({ value: dependencyUuid, comment: 'PBXTargetDependency' });
+}
+
+function ensureEmbeddedAppExtension(project, appTargetUuid, productFileRefUuid) {
+  const objects = project.hash.project.objects;
+  const phaseUuid =
+    findCopyFilesPhaseContainingFile(project, appTargetUuid, productFileRefUuid) ||
+    ensureCopyFilesBuildPhase(project, appTargetUuid, 'Embed App Extensions', 13);
+  const phase = objects.PBXCopyFilesBuildPhase[phaseUuid];
+  phase.name = '"Embed App Extensions"';
+  phase.dstPath = '""';
+  phase.dstSubfolderSpec = 13;
+  phase.files ||= [];
+
+  const alreadyEmbedded = phase.files.some(({ value }) => {
+    const buildFile = objects.PBXBuildFile[value];
+    if (buildFile?.fileRef === productFileRefUuid) {
+      buildFile.settings ||= { ATTRIBUTES: ['RemoveHeadersOnCopy'] };
+    }
+    return buildFile?.fileRef === productFileRefUuid;
+  });
+  if (alreadyEmbedded) return;
+
+  const productRef = objects.PBXFileReference?.[productFileRefUuid];
+  const productName = unquote(productRef?.path || productRef?.name || `${EXTENSION_NAME}.appex`);
+  const buildFileUuid = project.generateUuid();
+  objects.PBXBuildFile[buildFileUuid] = {
+    isa: 'PBXBuildFile',
+    fileRef: productFileRefUuid,
+    fileRef_comment: productName,
+    settings: { ATTRIBUTES: ['RemoveHeadersOnCopy'] },
+  };
+  objects.PBXBuildFile[`${buildFileUuid}_comment`] = `${productName} in Embed App Extensions`;
+  phase.files.push({ value: buildFileUuid, comment: `${productName} in Embed App Extensions` });
+}
+
+function findCopyFilesPhaseContainingFile(project, targetUuid, fileRefUuid) {
+  const objects = project.hash.project.objects;
+  const nativeTarget = objects.PBXNativeTarget?.[targetUuid];
+  for (const phase of nativeTarget?.buildPhases || []) {
+    const uuid = typeof phase === 'string' ? phase : phase.value;
+    const candidate = uuid ? objects.PBXCopyFilesBuildPhase?.[uuid] : null;
+    if (!candidate) continue;
+    const containsFile = (candidate.files || []).some(({ value }) => {
+      return objects.PBXBuildFile[value]?.fileRef === fileRefUuid;
+    });
+    if (containsFile) return uuid;
+  }
+  return null;
+}
+
+function ensureCopyFilesBuildPhase(project, targetUuid, phaseName, dstSubfolderSpec) {
+  const objects = project.hash.project.objects;
+  const nativeTarget = objects.PBXNativeTarget?.[targetUuid];
+  objects.PBXCopyFilesBuildPhase ||= {};
+  nativeTarget.buildPhases ||= [];
+
+  for (const phase of nativeTarget.buildPhases) {
+    const uuid = typeof phase === 'string' ? phase : phase.value;
+    const candidate = uuid ? objects.PBXCopyFilesBuildPhase[uuid] : null;
+    if (candidate && unquote(candidate.name) === phaseName) {
+      candidate.dstPath = '""';
+      candidate.dstSubfolderSpec = dstSubfolderSpec;
+      return uuid;
+    }
+  }
+
+  const uuid = project.generateUuid();
+  objects.PBXCopyFilesBuildPhase[uuid] = {
+    isa: 'PBXCopyFilesBuildPhase',
+    buildActionMask: 2147483647,
+    dstPath: '""',
+    dstSubfolderSpec,
+    files: [],
+    name: `"${phaseName}"`,
+    runOnlyForDeploymentPostprocessing: 0,
+  };
+  objects.PBXCopyFilesBuildPhase[`${uuid}_comment`] = phaseName;
+  nativeTarget.buildPhases.push({ value: uuid, comment: phaseName });
+  return uuid;
 }
 
 function addSwiftSourceFile(project, { fileName, filePath, groupUuid, sourcesPhaseUuid }) {
