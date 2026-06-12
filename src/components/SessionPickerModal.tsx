@@ -1,29 +1,48 @@
 import React, { useRef, useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, Modal, TouchableOpacity,
-  Animated, Easing, Dimensions,
+  Animated, Easing, Alert,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import PillButton from './PillButton';
 import { Colors } from '../constants/colors';
+import { meritRangeLabel } from '../utils/merit';
 
-const DURATIONS = [15, 25, 45, 60, 90];
+const FREE_PRESETS = [15, 30, 60];
+const CUSTOM_MIN = 5;
+const CUSTOM_MAX = 180;
+const CUSTOM_STEP = 5;
 
 type Props = {
   visible: boolean;
   initialInterval: number;
+  isUnlocked: boolean;
   onConfirm: (minutes: number) => void;
   onClose: () => void;
 };
 
-export default function SessionPickerModal({ visible, initialInterval, onConfirm, onClose }: Props) {
-  const translateY = useRef(new Animated.Value(420)).current;
+export default function SessionPickerModal({
+  visible,
+  initialInterval,
+  isUnlocked,
+  onConfirm,
+  onClose,
+}: Props) {
+  const translateY = useRef(new Animated.Value(480)).current;
   const [selected, setSelected] = useState(initialInterval);
+  const [customMinutes, setCustomMinutes] = useState(
+    FREE_PRESETS.includes(initialInterval) ? 45 : initialInterval
+  );
+
+  const isCustomSelected = !FREE_PRESETS.includes(selected);
 
   useEffect(() => {
     if (visible) {
-      setSelected(initialInterval);
+      const safeInitial = FREE_PRESETS.includes(initialInterval) ? initialInterval : FREE_PRESETS[0];
+      setSelected(FREE_PRESETS.includes(initialInterval) ? initialInterval : initialInterval);
+      if (!FREE_PRESETS.includes(initialInterval)) setCustomMinutes(initialInterval);
       Animated.timing(translateY, {
         toValue: 0,
         duration: 360,
@@ -35,11 +54,17 @@ export default function SessionPickerModal({ visible, initialInterval, onConfirm
 
   const dismiss = (callback?: () => void) => {
     Animated.timing(translateY, {
-      toValue: 420,
+      toValue: 480,
       duration: 280,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start(() => callback?.());
+  };
+
+  const adjustCustom = (delta: number) => {
+    const next = Math.min(CUSTOM_MAX, Math.max(CUSTOM_MIN, customMinutes + delta));
+    setCustomMinutes(next);
+    setSelected(next);
   };
 
   return (
@@ -65,21 +90,84 @@ export default function SessionPickerModal({ visible, initialInterval, onConfirm
         <Text style={styles.title}>Session Duration</Text>
         <Text style={styles.sub}>How long do you want to lock in?</Text>
 
-        <View style={styles.chipRow}>
-          {DURATIONS.map(d => {
-            const active = d === selected;
-            return (
-              <TouchableOpacity
-                key={d}
-                style={[styles.chip, active && styles.chipActive]}
-                onPress={() => setSelected(d)}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.chipNum, active && styles.chipNumActive]}>{d}</Text>
-                <Text style={[styles.chipUnit, active && styles.chipUnitActive]}>min</Text>
-              </TouchableOpacity>
-            );
-          })}
+        {/* Preset cards */}
+        <View style={styles.card}>
+          <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFill} />
+          <View style={styles.cardOverlay} />
+
+          <View style={styles.presetRow}>
+            {FREE_PRESETS.map(mins => {
+              const active = selected === mins;
+              return (
+                <TouchableOpacity
+                  key={mins}
+                  onPress={() => setSelected(mins)}
+                  activeOpacity={0.75}
+                  style={[styles.preset, active && styles.presetSelected]}
+                >
+                  <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFill} />
+                  <View style={[StyleSheet.absoluteFill, { backgroundColor: active ? Colors.glassPrimary : 'transparent' }]} />
+                  <Text style={[styles.presetNum, active && styles.presetTextOn]}>{mins}</Text>
+                  <Text style={[styles.presetUnit, active && styles.presetTextOn]}>min</Text>
+                  <Text style={[styles.presetMerit, active && styles.presetMeritOn]}>
+                    {meritRangeLabel(mins)}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <View style={styles.divider} />
+
+          {/* Custom row */}
+          {isUnlocked ? (
+            <View style={styles.customRow}>
+              <View style={styles.customLeft}>
+                <Text style={[styles.customLabel, isCustomSelected && styles.presetTextOn]}>Custom</Text>
+                <Text style={styles.presetMerit}>{meritRangeLabel(customMinutes)}</Text>
+              </View>
+              <View style={styles.stepper}>
+                <TouchableOpacity
+                  onPress={() => adjustCustom(-CUSTOM_STEP)}
+                  style={styles.stepBtn}
+                  disabled={customMinutes <= CUSTOM_MIN}
+                >
+                  <Ionicons
+                    name="remove"
+                    size={18}
+                    color={customMinutes <= CUSTOM_MIN ? Colors.ghost : Colors.primaryText}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setSelected(customMinutes)}
+                  style={styles.stepValue}
+                >
+                  <Text style={[styles.stepValueText, isCustomSelected && styles.presetTextOn]}>
+                    {customMinutes} min
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => adjustCustom(CUSTOM_STEP)}
+                  style={styles.stepBtn}
+                  disabled={customMinutes >= CUSTOM_MAX}
+                >
+                  <Ionicons
+                    name="add"
+                    size={18}
+                    color={customMinutes >= CUSTOM_MAX ? Colors.ghost : Colors.primaryText}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.customLocked}
+              onPress={() => Alert.alert('Method Pro', 'Unlock custom focus intervals and more with Method Pro.')}
+            >
+              <Ionicons name="lock-closed" size={12} color={Colors.ghost} style={{ marginRight: 6 }} />
+              <Text style={styles.customLockedLabel}>Custom interval — Pro</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <PillButton
@@ -108,7 +196,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
     borderColor: 'rgba(255,255,255,0.12)',
     overflow: 'hidden',
-    paddingHorizontal: 28,
+    paddingHorizontal: 24,
     paddingTop: 14,
     paddingBottom: 48,
   },
@@ -140,45 +228,113 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     color: Colors.dim,
     letterSpacing: 0.1,
-    marginBottom: 28,
+    marginBottom: 16,
   },
-  chipRow: {
+  card: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 0.5,
+    borderColor: Colors.glassBorder,
+    marginBottom: 4,
+  },
+  cardOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: Colors.glassBg,
+  },
+  presetRow: {
     flexDirection: 'row',
-    gap: 10,
+    padding: 14,
+    gap: 8,
   },
-  chip: {
+  preset: {
     flex: 1,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    paddingVertical: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 0.5,
+    borderColor: Colors.glassBorder,
+    paddingVertical: 12,
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    gap: 2,
   },
-  chipActive: {
-    backgroundColor: Colors.pureWhite,
-    borderColor: Colors.pureWhite,
+  presetSelected: { borderColor: Colors.glassBorderLight },
+  presetNum: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.dim,
   },
-  chipNum: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: Colors.pureWhite,
-    letterSpacing: -0.5,
+  presetUnit: {
+    fontSize: 9,
+    fontWeight: '400',
+    color: Colors.ghost,
   },
-  chipNumActive: {
-    color: Colors.background,
+  presetMerit: {
+    fontSize: 8,
+    fontWeight: '400',
+    color: Colors.ghost,
+    marginTop: 4,
+    letterSpacing: 0.2,
   },
-  chipUnit: {
-    fontSize: 10,
+  presetMeritOn:  { color: 'rgba(255,255,255,0.55)' },
+  presetTextOn:   { color: Colors.pureWhite },
+  divider: {
+    height: 0.5,
+    backgroundColor: Colors.glassBorder,
+    marginHorizontal: 14,
+  },
+  customRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  customLeft:  { gap: 3 },
+  customLabel: {
+    fontSize: 14,
     fontWeight: '500',
     color: Colors.dim,
-    letterSpacing: 0.5,
-    marginTop: 3,
   },
-  chipUnitActive: {
-    color: 'rgba(0,0,0,0.45)',
+  stepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  stepBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    borderWidth: 0.5,
+    borderColor: Colors.glassBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepValue: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 0.5,
+    borderColor: Colors.glassBorder,
+    minWidth: 72,
+    alignItems: 'center',
+  },
+  stepValueText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: Colors.dim,
+  },
+  customLocked: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  customLockedLabel: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: Colors.ghost,
   },
   confirmBtn: {
-    marginTop: 24,
+    marginTop: 16,
   },
 });

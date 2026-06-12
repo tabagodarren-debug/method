@@ -17,6 +17,7 @@ import { Typography } from '../constants/typography';
 import { loadPersona } from '../storage/persona';
 import { loadStats } from '../storage/stats';
 import { loadInterval, saveInterval } from '../storage/settings';
+import { checkAppUnlock } from '../services/purchases';
 import { getRankProgress } from '../utils/ranks';
 import { getGoalCountdown } from '../utils/goal';
 import type { RootStackParamList, PersonaData, SessionStats } from '../types';
@@ -67,12 +68,14 @@ export default function HomeScreen() {
   const [showShare, setShowShare] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const [interval, setIntervalMinutes] = useState(25);
+  const [isUnlocked, setIsUnlocked] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       loadPersona().then(setPersona);
       loadStats().then(setStats);
       loadInterval().then(setIntervalMinutes);
+      checkAppUnlock().then(setIsUnlocked);
     }, [])
   );
 
@@ -181,6 +184,7 @@ export default function HomeScreen() {
       <SessionPickerModal
         visible={showPicker}
         initialInterval={interval}
+        isUnlocked={isUnlocked}
         onClose={() => setShowPicker(false)}
         onConfirm={async (minutes) => {
           setShowPicker(false);
