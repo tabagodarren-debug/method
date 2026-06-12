@@ -3,7 +3,10 @@ import { Platform } from 'react-native';
 import { requireNativeModule } from 'expo-modules-core';
 
 const isSupported = Platform.OS === 'ios';
-const Native = isSupported ? requireNativeModule('MethodLiveActivity') : null;
+let Native: any = null;
+if (isSupported) {
+  try { Native = requireNativeModule('MethodLiveActivity'); } catch (_) {}
+}
 
 export async function startLiveActivity(params: {
   personaName: string;

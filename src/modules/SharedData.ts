@@ -4,7 +4,8 @@ import { getRankProgress } from '../utils/ranks';
 import { getGoalCountdown } from '../utils/goal';
 import type { SessionStats, PersonaData } from '../types';
 
-const Native = requireNativeModule('MethodSharedData');
+let Native: any = null;
+try { Native = requireNativeModule('MethodSharedData'); } catch (_) {}
 
 export type SharedSnapshot = {
   totalEarned: number;
@@ -20,11 +21,8 @@ export type SharedSnapshot = {
 };
 
 export async function updateSharedData(snapshot: SharedSnapshot): Promise<void> {
-  try {
-    await Native.update(snapshot);
-  } catch (_) {
-    // silently skip if the native module isn't available (Expo Go, tests)
-  }
+  if (!Native) return;
+  try { await Native.update(snapshot); } catch (_) {}
 }
 
 export function buildSnapshot(

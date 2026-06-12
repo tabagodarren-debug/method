@@ -1,0 +1,8 @@
+{
+  "ios": {
+    "modules": [
+      "MethodSharedDataModule",
+      "MethodLiveActivityModule"
+    ]
+  }
+}
