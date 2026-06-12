@@ -16,6 +16,10 @@ import { Typography } from '../constants/typography';
 import { loadInterval } from '../storage/settings';
 import { recordAbandon, ABANDON_PENALTY } from '../storage/stats';
 import { calculateMerit } from '../utils/merit';
+import { startLiveActivity, updateLiveActivity, endLiveActivity } from '../modules/LiveActivity';
+import { loadPersona } from '../storage/persona';
+import { loadStats } from '../storage/stats';
+import { getRankProgress } from '../utils/ranks';
 import { playTrack, pauseAudio, resumeAudio, skipTrack, stopAudio, getCurrentTrackName, hasTracks } from '../services/audio';
 import type { RootStackParamList } from '../types';
 
@@ -89,6 +93,15 @@ export default function FocusSessionScreen() {
   useFocusEffect(
     useCallback(() => {
       loadInterval().then(setIntervalMinutes);
+      Promise.all([loadPersona(), loadStats()]).then(([persona, stats]) => {
+        const rank = getRankProgress(stats.totalEarned).current;
+        startLiveActivity({
+          personaName:     persona?.name ?? '',
+          rankTitle:       rank.title,
+          intervalMinutes: intervalMinutes,
+          projectedMerit:  calculateMerit(intervalMinutes),
+        });
+      });
       if (hasTracks()) {
         playTrack().then(() => {
           setIsPlaying(true);
@@ -116,12 +129,15 @@ export default function FocusSessionScreen() {
       if (remaining <= 0) {
         clearInterval(timerRef.current!);
         stopAudio();
+        const earned = calculateMerit(intervalMinutes);
+        endLiveActivity(earned);
         nav.replace('SessionComplete', {
-          earnedThisSession: calculateMerit(intervalMinutes),
+          earnedThisSession: earned,
           intervalMinutes,
         });
       } else {
         setTimeLeft(remaining);
+        updateLiveActivity(remaining);
       }
     }, 500);
   };
@@ -151,6 +167,7 @@ export default function FocusSessionScreen() {
             clearInterval(slideRef.current!);
             await stopAudio();
             await recordAbandon();
+            await endLiveActivity(0);
             nav.goBack();
           },
         },
