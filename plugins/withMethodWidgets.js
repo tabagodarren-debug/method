@@ -6,14 +6,27 @@ const {
   withXcodeProject,
 } = require('@expo/config-plugins');
 const path = require('path');
-const fs   = require('fs');
+const fs = require('fs');
 
-const APP_GROUP           = 'group.com.darrentabago.method';
-const EXTENSION_NAME      = 'MethodWidget';
+const APP_GROUP = 'group.com.darrentabago.method';
+const EXTENSION_NAME = 'MethodWidget';
 const EXTENSION_BUNDLE_ID = 'com.darrentabago.method.MethodWidget';
-const SWIFT_DIR           = path.join(__dirname, 'swift');
+const SWIFT_DIR = path.join(__dirname, 'swift');
 
-// ── composed entry ────────────────────────────────────────────────────────────
+const EXTENSION_SWIFT_FILES = [
+  'MethodWidgetBundle.swift',
+  'MethodWidget.swift',
+  'MethodLiveActivityAttributes.swift',
+  'MethodLiveActivityWidget.swift',
+  'MethodSharedData.swift',
+];
+
+const MODULE_SWIFT_FILES = [
+  'MethodSharedDataModule.swift',
+  'MethodLiveActivityModule.swift',
+  'MethodLiveActivityAttributes.swift',
+];
+
 function withMethodWidgets(config) {
   config = withAppGroupEntitlement(config);
   config = withLiveActivityInfoPlist(config);
@@ -23,7 +36,6 @@ function withMethodWidgets(config) {
   return config;
 }
 
-// ── 1. App Group entitlement ─────────────────────────────────────────────────
 function withAppGroupEntitlement(config) {
   return withEntitlementsPlist(config, (c) => {
     const key = 'com.apple.security.application-groups';
@@ -35,7 +47,6 @@ function withAppGroupEntitlement(config) {
   });
 }
 
-// ── 2. Live Activity Info.plist keys ─────────────────────────────────────────
 function withLiveActivityInfoPlist(config) {
   return withInfoPlist(config, (c) => {
     c.modResults.NSSupportsLiveActivities = true;
@@ -44,47 +55,23 @@ function withLiveActivityInfoPlist(config) {
   });
 }
 
-// ── 3. Copy Swift files ───────────────────────────────────────────────────────
 function withWidgetFiles(config) {
   return withDangerousMod(config, [
     'ios',
     async (c) => {
-      const root    = c.modRequest.projectRoot;
+      const root = c.modRequest.projectRoot;
       const appName = c.modRequest.projectName;
 
-      // Extension directory
       const extDir = path.join(root, 'ios', EXTENSION_NAME);
       fs.mkdirSync(extDir, { recursive: true });
-
-      // Extension Swift source files
-      const extFiles = [
-        'MethodWidgetBundle.swift',
-        'MethodWidget.swift',
-        'MethodLiveActivityAttributes.swift',
-        'MethodLiveActivityWidget.swift',
-        'MethodSharedData.swift',
-      ];
-      for (const f of extFiles) {
+      for (const f of EXTENSION_SWIFT_FILES) {
         fs.copyFileSync(path.join(SWIFT_DIR, f), path.join(extDir, f));
       }
-
-      // Extension Info.plist
       fs.writeFileSync(path.join(extDir, 'Info.plist'), extensionInfoPlist());
+      fs.writeFileSync(path.join(extDir, `${EXTENSION_NAME}.entitlements`), extensionEntitlements());
 
-      // Extension entitlements
-      fs.writeFileSync(
-        path.join(extDir, `${EXTENSION_NAME}.entitlements`),
-        extensionEntitlements()
-      );
-
-      // Main app: native module Swift files
       const appDir = path.join(root, 'ios', appName);
-      const moduleFiles = [
-        'MethodSharedDataModule.swift',
-        'MethodLiveActivityModule.swift',
-        'MethodLiveActivityAttributes.swift',
-      ];
-      for (const f of moduleFiles) {
+      for (const f of MODULE_SWIFT_FILES) {
         fs.copyFileSync(path.join(SWIFT_DIR, f), path.join(appDir, f));
       }
 
@@ -93,183 +80,63 @@ function withWidgetFiles(config) {
   ]);
 }
 
-// ── 4. Add MethodWidget extension target to Xcode project ────────────────────
 function withXcodeTarget(config) {
   return withXcodeProject(config, (c) => {
     const project = c.modResults;
     const appName = c.modRequest.projectName;
 
-    // Idempotency: skip if target already exists
-    const targets = project.pbxNativeTargetSection();
-    const alreadyExists = Object.values(targets).some(
-      (t) => t && (t.name === EXTENSION_NAME || t.name === `"${EXTENSION_NAME}"`)
-    );
-    if (alreadyExists) return c;
+    let extTargetUuid = findTargetUuidByName(project, EXTENSION_NAME);
+    const extTarget = extTargetUuid
+      ? { uuid: extTargetUuid, pbxNativeTarget: project.pbxNativeTargetSection()[extTargetUuid] }
+      : project.addTarget(EXTENSION_NAME, 'app_extension', EXTENSION_NAME, EXTENSION_BUNDLE_ID);
+    extTargetUuid = extTarget.uuid;
 
-    // Add extension target
-    const extTarget = project.addTarget(
-      EXTENSION_NAME,
-      'app_extension',
-      EXTENSION_NAME,
-      EXTENSION_BUNDLE_ID
-    );
+    configureExtensionBuildSettings(project, extTarget.pbxNativeTarget);
 
-    // Set build settings on all configurations for this target
-    const buildConfigs   = project.pbxXCBuildConfigurationSection();
-    const configListUuid = extTarget.pbxNativeTarget.buildConfigurationList;
-    const configList     = project.pbxXCConfigurationList()[configListUuid];
+    let extGroup = findGroupByPath(project, EXTENSION_NAME);
+    if (!extGroup) {
+      extGroup = project.addPbxGroup([], EXTENSION_NAME, EXTENSION_NAME);
+    }
 
-    (configList.buildConfigurations || []).forEach(({ value: cfgUuid }) => {
-      const bc = buildConfigs[cfgUuid];
-      if (!bc || !bc.buildSettings) return;
-      bc.buildSettings.SWIFT_VERSION                  = '"5.0"';
-      bc.buildSettings.IPHONEOS_DEPLOYMENT_TARGET     = '"16.2"';
-      bc.buildSettings.INFOPLIST_FILE                 = `"${EXTENSION_NAME}/Info.plist"`;
-      bc.buildSettings.CODE_SIGN_ENTITLEMENTS         = `"${EXTENSION_NAME}/${EXTENSION_NAME}.entitlements"`;
-      bc.buildSettings.PRODUCT_BUNDLE_IDENTIFIER      = `"${EXTENSION_BUNDLE_ID}"`;
-      bc.buildSettings.SKIP_INSTALL                   = 'YES';
-      bc.buildSettings.TARGETED_DEVICE_FAMILY         = '"1,2"';
-      bc.buildSettings.MARKETING_VERSION              = '"1.0"';
-      bc.buildSettings.CURRENT_PROJECT_VERSION        = '"1"';
-    });
-
-    // Add PBX group for extension files
-    const extGroup = project.addPbxGroup([], EXTENSION_NAME, EXTENSION_NAME);
     const rootGroupUuid = project.getFirstProject().firstProject.mainGroup;
-    project.addToPbxGroup(extGroup.uuid, rootGroupUuid);
-
-    // Add Swift source files to extension target — direct PBX manipulation
-    // (addSourceFile with a target calls addPluginFile which uses the wrong target)
-    const extSources = [
-      'MethodWidgetBundle.swift',
-      'MethodWidget.swift',
-      'MethodLiveActivityAttributes.swift',
-      'MethodLiveActivityWidget.swift',
-      'MethodSharedData.swift',
-    ];
-    {
-      const objs = project.hash.project.objects;
-      // Use pbxNativeTarget directly — avoids UUID key-format mismatches
-      const extBuildPhases = extTarget.pbxNativeTarget.buildPhases || [];
-      let extSourcesPhaseUUID = null;
-      for (const phase of extBuildPhases) {
-        // buildPhases entries may be plain UUID strings or { value, comment } objects
-        const uuid = typeof phase === 'string' ? phase : phase.value;
-        if (uuid && objs['PBXSourcesBuildPhase']?.[uuid]) {
-          extSourcesPhaseUUID = uuid; break;
-        }
-      }
-      if (extSourcesPhaseUUID) {
-        const extSourcesPhase = objs['PBXSourcesBuildPhase'][extSourcesPhaseUUID];
-        for (const f of extSources) {
-          const filePath = `${EXTENSION_NAME}/${f}`;
-          const fileRefUUID = project.generateUuid();
-          objs['PBXFileReference'][fileRefUUID] = {
-            isa: 'PBXFileReference',
-            lastKnownFileType: 'sourcecode.swift',
-            name: `"${f}"`,
-            path: `"${filePath}"`,
-            sourceTree: '"SOURCE_ROOT"',
-          };
-          objs['PBXFileReference'][`${fileRefUUID}_comment`] = f;
-          const buildFileUUID = project.generateUuid();
-          objs['PBXBuildFile'][buildFileUUID] = {
-            isa: 'PBXBuildFile', fileRef: fileRefUUID, fileRef_comment: f,
-          };
-          objs['PBXBuildFile'][`${buildFileUUID}_comment`] = `${f} in Sources`;
-          extSourcesPhase.files.push({ value: buildFileUUID, comment: `${f} in Sources` });
-          objs['PBXGroup'][extGroup.uuid].children.push({ value: fileRefUUID, comment: f });
-        }
-      }
+    if (!groupHasChild(project, rootGroupUuid, EXTENSION_NAME)) {
+      project.addToPbxGroup(extGroup.uuid, rootGroupUuid);
     }
 
-    // Link WidgetKit and ActivityKit
-    project.addFramework('WidgetKit.framework', {
-      target: extTarget.uuid, link: true,
-    });
-    project.addFramework('ActivityKit.framework', {
-      target: extTarget.uuid, link: true,
-    });
+    const extSourcesPhaseUuid = ensureBuildPhase(
+      project,
+      extTargetUuid,
+      'PBXSourcesBuildPhase',
+      'Sources'
+    );
+    ensureBuildPhase(project, extTargetUuid, 'PBXFrameworksBuildPhase', 'Frameworks');
 
-    // Add native module Swift files to main app target
-    // getFirstTarget() can return a comment entry (string), so find by name instead
-    let mainTargetUuid = null;
-    for (const [key, target] of Object.entries(targets)) {
-      if (key.endsWith('_comment')) continue;
-      if (target && typeof target === 'object') {
-        const name = (target.name ?? '').replace(/^"|"$/g, '');
-        if (name === appName) { mainTargetUuid = key; break; }
-      }
+    for (const f of EXTENSION_SWIFT_FILES) {
+      addSwiftSourceFile(project, {
+        fileName: f,
+        filePath: `${EXTENSION_NAME}/${f}`,
+        groupUuid: extGroup.uuid,
+        sourcesPhaseUuid: extSourcesPhaseUuid,
+      });
     }
-    if (mainTargetUuid) {
-      const moduleFiles = [
-        'MethodSharedDataModule.swift',
-        'MethodLiveActivityModule.swift',
-        'MethodLiveActivityAttributes.swift',
-      ];
 
-      // Direct PBX manipulation — avoids addSourceFile/addPluginFile crash
-      const objects = project.hash.project.objects;
-      const mainTarget = objects['PBXNativeTarget'][mainTargetUuid];
+    addFrameworkOnce(project, 'WidgetKit.framework', extTargetUuid);
+    addFrameworkOnce(project, 'ActivityKit.framework', extTargetUuid);
 
-      // Find Sources build phase for main target
-      let sourcesBuildPhaseUUID = null;
-      for (const phase of (mainTarget.buildPhases || [])) {
-        const uuid = typeof phase === 'string' ? phase : phase.value;
-        if (uuid && objects['PBXSourcesBuildPhase']?.[uuid]) {
-          sourcesBuildPhaseUUID = uuid;
-          break;
-        }
-      }
+    const mainTargetUuid = findTargetUuidByName(project, appName);
+    const mainSourcesPhaseUuid = mainTargetUuid
+      ? findBuildPhaseUuid(project, mainTargetUuid, 'PBXSourcesBuildPhase')
+      : null;
+    const mainGroup = findGroupByPath(project, appName);
 
-      // Find main app group (by path = appName)
-      let mainGroupKey = null;
-      for (const [key, group] of Object.entries(objects['PBXGroup'] || {})) {
-        if (key.endsWith('_comment') || !group || typeof group !== 'object') continue;
-        if ((group.path ?? '').replace(/^"|"$/g, '') === appName) {
-          mainGroupKey = key;
-          break;
-        }
-      }
-
-      if (sourcesBuildPhaseUUID) {
-        const sourcesBuildPhase = objects['PBXSourcesBuildPhase'][sourcesBuildPhaseUUID];
-        for (const f of moduleFiles) {
-          const filePath = `${appName}/${f}`;
-          // Skip if already present
-          const exists = Object.entries(objects['PBXFileReference'] || {})
-            .some(([k, r]) => !k.endsWith('_comment') && r &&
-              (r.path === filePath || r.path === `"${filePath}"`));
-          if (exists) continue;
-
-          // File reference (SOURCE_ROOT so Xcode finds ios/Method/<f>)
-          const fileRefUUID = project.generateUuid();
-          objects['PBXFileReference'][fileRefUUID] = {
-            isa: 'PBXFileReference',
-            lastKnownFileType: 'sourcecode.swift',
-            name: `"${f}"`,
-            path: `"${filePath}"`,
-            sourceTree: '"SOURCE_ROOT"',
-          };
-          objects['PBXFileReference'][`${fileRefUUID}_comment`] = f;
-
-          // Build file
-          const buildFileUUID = project.generateUuid();
-          objects['PBXBuildFile'][buildFileUUID] = {
-            isa: 'PBXBuildFile',
-            fileRef: fileRefUUID,
-            fileRef_comment: f,
-          };
-          objects['PBXBuildFile'][`${buildFileUUID}_comment`] = `${f} in Sources`;
-
-          // Add to Sources build phase
-          sourcesBuildPhase.files.push({ value: buildFileUUID, comment: `${f} in Sources` });
-
-          // Add to main group so it shows in Xcode navigator
-          if (mainGroupKey) {
-            objects['PBXGroup'][mainGroupKey].children.push({ value: fileRefUUID, comment: f });
-          }
-        }
+    if (mainSourcesPhaseUuid) {
+      for (const f of MODULE_SWIFT_FILES) {
+        addSwiftSourceFile(project, {
+          fileName: f,
+          filePath: `${appName}/${f}`,
+          groupUuid: mainGroup?.uuid,
+          sourcesPhaseUuid: mainSourcesPhaseUuid,
+        });
       }
     }
 
@@ -277,7 +144,140 @@ function withXcodeTarget(config) {
   });
 }
 
-// ── 5. Podfile post_install: register custom modules in ExpoModulesProvider ──
+function configureExtensionBuildSettings(project, nativeTarget) {
+  const buildConfigs = project.pbxXCBuildConfigurationSection();
+  const configList = project.pbxXCConfigurationList()[nativeTarget.buildConfigurationList];
+
+  for (const { value: cfgUuid } of configList.buildConfigurations || []) {
+    const bc = buildConfigs[cfgUuid];
+    if (!bc?.buildSettings) continue;
+    bc.buildSettings.SWIFT_VERSION = '"5.0"';
+    bc.buildSettings.IPHONEOS_DEPLOYMENT_TARGET = '"16.2"';
+    bc.buildSettings.INFOPLIST_FILE = `"${EXTENSION_NAME}/Info.plist"`;
+    bc.buildSettings.CODE_SIGN_ENTITLEMENTS = `"${EXTENSION_NAME}/${EXTENSION_NAME}.entitlements"`;
+    bc.buildSettings.PRODUCT_BUNDLE_IDENTIFIER = `"${EXTENSION_BUNDLE_ID}"`;
+    bc.buildSettings.SKIP_INSTALL = 'YES';
+    bc.buildSettings.TARGETED_DEVICE_FAMILY = '"1,2"';
+    bc.buildSettings.MARKETING_VERSION = '"1.0"';
+    bc.buildSettings.CURRENT_PROJECT_VERSION = '"1"';
+  }
+}
+
+function findTargetUuidByName(project, targetName) {
+  for (const [uuid, target] of Object.entries(project.pbxNativeTargetSection() || {})) {
+    if (uuid.endsWith('_comment') || !target || typeof target !== 'object') continue;
+    if (unquote(target.name) === targetName) return uuid;
+  }
+  return null;
+}
+
+function findGroupByPath(project, groupPath) {
+  for (const [uuid, group] of Object.entries(project.hash.project.objects.PBXGroup || {})) {
+    if (uuid.endsWith('_comment') || !group || typeof group !== 'object') continue;
+    if (unquote(group.path) === groupPath || unquote(group.name) === groupPath) {
+      return { uuid, group };
+    }
+  }
+  return null;
+}
+
+function groupHasChild(project, groupUuid, childName) {
+  const group = project.hash.project.objects.PBXGroup?.[groupUuid];
+  return (group?.children || []).some((child) => child.comment === childName);
+}
+
+function findBuildPhaseUuid(project, targetUuid, phaseType) {
+  const objects = project.hash.project.objects;
+  const nativeTarget = objects.PBXNativeTarget?.[targetUuid];
+  for (const phase of nativeTarget?.buildPhases || []) {
+    const uuid = typeof phase === 'string' ? phase : phase.value;
+    if (uuid && objects[phaseType]?.[uuid]) return uuid;
+  }
+  return null;
+}
+
+function ensureBuildPhase(project, targetUuid, phaseType, comment) {
+  const existing = findBuildPhaseUuid(project, targetUuid, phaseType);
+  if (existing) return existing;
+  return project.addBuildPhase([], phaseType, comment, targetUuid).uuid;
+}
+
+function addSwiftSourceFile(project, { fileName, filePath, groupUuid, sourcesPhaseUuid }) {
+  const objects = project.hash.project.objects;
+  const existingFileRefUuid = findFileRefUuidByPath(project, filePath);
+  const fileRefUuid = existingFileRefUuid || project.generateUuid();
+
+  if (!existingFileRefUuid) {
+    objects.PBXFileReference[fileRefUuid] = {
+      isa: 'PBXFileReference',
+      lastKnownFileType: 'sourcecode.swift',
+      name: `"${fileName}"`,
+      path: `"${filePath}"`,
+      sourceTree: '"SOURCE_ROOT"',
+    };
+    objects.PBXFileReference[`${fileRefUuid}_comment`] = fileName;
+  }
+
+  if (groupUuid && !groupHasChild(project, groupUuid, fileName)) {
+    objects.PBXGroup[groupUuid].children.push({ value: fileRefUuid, comment: fileName });
+  }
+
+  const sourcesPhase = objects.PBXSourcesBuildPhase[sourcesPhaseUuid];
+  if ((sourcesPhase.files || []).some(({ value }) => objects.PBXBuildFile[value]?.fileRef === fileRefUuid)) {
+    return;
+  }
+
+  const buildFileUuid = project.generateUuid();
+  objects.PBXBuildFile[buildFileUuid] = {
+    isa: 'PBXBuildFile',
+    fileRef: fileRefUuid,
+    fileRef_comment: fileName,
+  };
+  objects.PBXBuildFile[`${buildFileUuid}_comment`] = `${fileName} in Sources`;
+  sourcesPhase.files.push({ value: buildFileUuid, comment: `${fileName} in Sources` });
+}
+
+function addFrameworkOnce(project, framework, targetUuid) {
+  ensureBuildPhase(project, targetUuid, 'PBXFrameworksBuildPhase', 'Frameworks');
+  const objects = project.hash.project.objects;
+  const existingFileRefUuid = findFileRefUuidByPath(project, framework);
+  const frameworkPhaseUuid = findBuildPhaseUuid(project, targetUuid, 'PBXFrameworksBuildPhase');
+  const frameworkPhase = objects.PBXFrameworksBuildPhase[frameworkPhaseUuid];
+
+  if (
+    existingFileRefUuid &&
+    (frameworkPhase.files || []).some(({ value }) => objects.PBXBuildFile[value]?.fileRef === existingFileRefUuid)
+  ) {
+    return;
+  }
+
+  if (existingFileRefUuid) {
+    const buildFileUuid = project.generateUuid();
+    objects.PBXBuildFile[buildFileUuid] = {
+      isa: 'PBXBuildFile',
+      fileRef: existingFileRefUuid,
+      fileRef_comment: framework,
+    };
+    objects.PBXBuildFile[`${buildFileUuid}_comment`] = `${framework} in Frameworks`;
+    frameworkPhase.files.push({ value: buildFileUuid, comment: `${framework} in Frameworks` });
+    return;
+  }
+
+  project.addFramework(framework, { target: targetUuid, link: true });
+}
+
+function findFileRefUuidByPath(project, filePath) {
+  for (const [uuid, ref] of Object.entries(project.hash.project.objects.PBXFileReference || {})) {
+    if (uuid.endsWith('_comment') || !ref || typeof ref !== 'object') continue;
+    if (unquote(ref.path) === filePath) return uuid;
+  }
+  return null;
+}
+
+function unquote(value) {
+  return typeof value === 'string' ? value.replace(/^"|"$/g, '') : value;
+}
+
 function withPodfileRegistration(config) {
   return withDangerousMod(config, [
     'ios',
@@ -287,32 +287,38 @@ function withPodfileRegistration(config) {
       if (!fs.existsSync(podfilePath)) return c;
 
       let podfile = fs.readFileSync(podfilePath, 'utf8');
-      if (podfile.includes('MethodSharedDataModule')) return c;
+      if (podfile.includes('Method: register custom native modules')) return c;
 
-      // Inject into existing post_install block (CocoaPods forbids multiple blocks)
       const injection = `
   # Method: register custom native modules in ExpoModulesProvider
   provider_path = File.join(File.dirname(__FILE__), '${appName}', 'ExpoModulesProvider.swift')
   if File.exist?(provider_path)
     content = File.read(provider_path)
     unless content.include?('MethodSharedDataModule')
-      content.sub!(/return \\[/, "return [\\n      MethodSharedDataModule.self,\\n      MethodLiveActivityModule.self,")
-      File.write(provider_path, content)
+      updated = content.sub(/return\\s*\\[/, "return [\\n      MethodSharedDataModule.self,\\n      MethodLiveActivityModule.self,")
+      if updated != content
+        File.write(provider_path, updated)
+      else
+        Pod::UI.warn "Method: could not patch ExpoModulesProvider.swift"
+      end
     end
+  else
+    Pod::UI.warn "Method: ExpoModulesProvider.swift not found at #{provider_path}"
   end
 `;
+
       if (podfile.includes('post_install do |installer|')) {
         podfile = podfile.replace('post_install do |installer|', `post_install do |installer|${injection}`);
       } else {
         podfile += `\npost_install do |installer|\n${injection}end\n`;
       }
+
       fs.writeFileSync(podfilePath, podfile);
       return c;
     },
   ]);
 }
 
-// ── helpers ───────────────────────────────────────────────────────────────────
 function extensionInfoPlist() {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
