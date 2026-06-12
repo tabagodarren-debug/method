@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, Share } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -43,6 +43,15 @@ function AnimatedLetter({ char, delay, trigger }: { char: string; delay: number;
 }
 
 export default function RankUpCard({ visible, rank, onShare, onContinue }: Props) {
+  const handleShare = async () => {
+    if (!rank) return;
+    try {
+      await Share.share({
+        message: `Just ranked up to ${rank.title.toUpperCase()} on Method. Time to lock in. 🏆`,
+      });
+    } catch (_) {}
+    onShare();
+  };
   const backdrop  = useSharedValue(0);
   const labelOp   = useSharedValue(0);
   const lineW     = useSharedValue(0);
@@ -155,7 +164,7 @@ export default function RankUpCard({ visible, rank, onShare, onContinue }: Props
         </Animated.Text>
 
         <Animated.View style={[styles.footer, footerStyle]}>
-          <TouchableOpacity style={styles.shareBtn} onPress={onShare} activeOpacity={0.8}>
+          <TouchableOpacity style={styles.shareBtn} onPress={handleShare} activeOpacity={0.8}>
             <BlurView intensity={40} tint="light" style={StyleSheet.absoluteFill} />
             <Text style={styles.shareLabel}>Share This</Text>
           </TouchableOpacity>
