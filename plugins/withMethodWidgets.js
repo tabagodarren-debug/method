@@ -201,15 +201,21 @@ function withPodfileRegistration(config) {
     const snippet = `
 # Method: register custom native modules in ExpoModulesProvider
 post_install do |installer|
-  provider_path = File.join(File.dirname(__FILE__), '${appName}', 'ExpoModulesProvider.swift')
-  if File.exist?(provider_path)
-    content = File.read(provider_path)
-    unless content.include?('MethodSharedDataModule')
-      content.sub!(
-        /(\\s+return \\[)/,
-        "\\n      MethodSharedDataModule.self,\\n      MethodLiveActivityModule.self,\\1"
-      )
-      File.write(provider_path, content)
+  app_dir = File.join(File.dirname(__FILE__), '${appName}')
+  delegate_path = File.join(app_dir, 'AppDelegate.swift')
+  already_patched = File.exist?(delegate_path) && File.read(delegate_path).include?('MethodModulesProvider')
+
+  unless already_patched
+    provider_path = File.join(app_dir, 'ExpoModulesProvider.swift')
+    if File.exist?(provider_path)
+      content = File.read(provider_path)
+      unless content.include?('MethodSharedDataModule')
+        content.sub!(
+          /(\\s+return \\[)/,
+          "\\n      MethodSharedDataModule.self,\\n      MethodLiveActivityModule.self,\\1"
+        )
+        File.write(provider_path, content)
+      end
     end
   end
 end

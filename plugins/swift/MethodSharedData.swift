@@ -17,7 +17,8 @@ struct MethodData {
 
     static func load() -> MethodData {
         let d = UserDefaults(suiteName: appGroup) ?? .standard
-        let raw = d.array(forKey: "weekActivity") as? [Bool]
+        let rawArray   = d.array(forKey: "weekActivity") ?? []
+        let weekActivity = rawArray.compactMap { ($0 as? NSNumber)?.boolValue }
         return MethodData(
             totalEarned:   d.integer(forKey: "totalEarned"),
             rankTitle:     d.string(forKey: "rankTitle")  ?? "The Broke One",
@@ -28,7 +29,7 @@ struct MethodData {
             currentStreak: d.integer(forKey: "currentStreak"),
             personaName:   d.string(forKey: "personaName") ?? "",
             daysRemaining: d.integer(forKey: "daysRemaining"),
-            weekActivity:  raw ?? Array(repeating: false, count: 7)
+            weekActivity:  weekActivity.count == 7 ? weekActivity : Array(repeating: false, count: 7)
         )
     }
 }
