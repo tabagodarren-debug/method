@@ -1,5 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { PersonaData } from '../types';
+import { updateSharedData, buildSnapshot } from '../modules/SharedData';
+import { loadStats } from './stats';
 
 const PERSONA_KEY = '@method/persona';
 const ONBOARDED_KEY = '@method/onboarded';
@@ -10,6 +12,8 @@ export const savePersona = async (data: PersonaData): Promise<void> => {
     startDate: data.startDate ?? new Date().toISOString().split('T')[0],
   };
   await AsyncStorage.setItem(PERSONA_KEY, JSON.stringify(withStart));
+  const stats = await loadStats();
+  updateSharedData(buildSnapshot(stats, withStart)).catch(() => {});
 };
 
 export const loadPersona = async (): Promise<PersonaData | null> => {

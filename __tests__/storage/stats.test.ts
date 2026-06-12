@@ -1,3 +1,7 @@
+jest.mock('expo-modules-core', () => ({
+  requireNativeModule: () => ({ update: jest.fn().mockResolvedValue(undefined) }),
+}));
+
 import { loadStats, recordSession, recordAbandon, ABANDON_PENALTY, DEFAULT_STATS } from '../../src/storage/stats';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 

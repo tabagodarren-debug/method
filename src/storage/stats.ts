@@ -1,5 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { SessionStats } from '../types';
+import { updateSharedData, buildSnapshot } from '../modules/SharedData';
+import { loadPersona } from './persona';
 
 const STATS_KEY = '@method/stats';
 
@@ -47,6 +49,8 @@ export const recordSession = async (dateStr: string, earnedAmount: number, inter
   }
 
   await saveStats(stats);
+  const persona = await loadPersona();
+  updateSharedData(buildSnapshot(stats, persona)).catch(() => {});
   return stats;
 };
 
@@ -55,6 +59,8 @@ export const recordAbandon = async (): Promise<SessionStats> => {
   stats.sessionsAbandoned += 1;
   stats.totalEarned = Math.max(0, stats.totalEarned - ABANDON_PENALTY);
   await saveStats(stats);
+  const persona = await loadPersona();
+  updateSharedData(buildSnapshot(stats, persona)).catch(() => {});
   return stats;
 };
 

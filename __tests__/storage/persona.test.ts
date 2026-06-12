@@ -1,3 +1,7 @@
+jest.mock('expo-modules-core', () => ({
+  requireNativeModule: () => ({ update: jest.fn().mockResolvedValue(undefined) }),
+}));
+
 import { savePersona, loadPersona, clearPersona, isOnboarded, setOnboarded } from '../../src/storage/persona';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
