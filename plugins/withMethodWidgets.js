@@ -153,8 +153,8 @@ function withXcodeTarget(config) {
     const rootGroupUuid = project.getFirstProject().firstProject.mainGroup;
     project.addToPbxGroup(extGroup.uuid, rootGroupUuid);
 
-    // Add Swift source files to extension target
-    // Use filename only — group path 'MethodWidget' already provides the directory
+    // Add Swift source files to extension target — direct PBX manipulation
+    // (addSourceFile with a target calls addPluginFile which uses the wrong target)
     const extSources = [
       'MethodWidgetBundle.swift',
       'MethodWidget.swift',
@@ -162,8 +162,37 @@ function withXcodeTarget(config) {
       'MethodLiveActivityWidget.swift',
       'MethodSharedData.swift',
     ];
-    for (const f of extSources) {
-      project.addSourceFile(f, { target: extTarget.uuid }, extGroup.uuid);
+    {
+      const objs = project.hash.project.objects;
+      const extTargetObj = objs['PBXNativeTarget'][extTarget.uuid];
+      let extSourcesPhaseUUID = null;
+      for (const phase of (extTargetObj.buildPhases || [])) {
+        if (objs['PBXSourcesBuildPhase']?.[phase.value]) {
+          extSourcesPhaseUUID = phase.value; break;
+        }
+      }
+      if (extSourcesPhaseUUID) {
+        const extSourcesPhase = objs['PBXSourcesBuildPhase'][extSourcesPhaseUUID];
+        for (const f of extSources) {
+          const filePath = `${EXTENSION_NAME}/${f}`;
+          const fileRefUUID = project.generateUuid();
+          objs['PBXFileReference'][fileRefUUID] = {
+            isa: 'PBXFileReference',
+            lastKnownFileType: 'sourcecode.swift',
+            name: `"${f}"`,
+            path: `"${filePath}"`,
+            sourceTree: '"SOURCE_ROOT"',
+          };
+          objs['PBXFileReference'][`${fileRefUUID}_comment`] = f;
+          const buildFileUUID = project.generateUuid();
+          objs['PBXBuildFile'][buildFileUUID] = {
+            isa: 'PBXBuildFile', fileRef: fileRefUUID, fileRef_comment: f,
+          };
+          objs['PBXBuildFile'][`${buildFileUUID}_comment`] = `${f} in Sources`;
+          extSourcesPhase.files.push({ value: buildFileUUID, comment: `${f} in Sources` });
+          objs['PBXGroup'][extGroup.uuid].children.push({ value: fileRefUUID, comment: f });
+        }
+      }
     }
 
     // Link WidgetKit and ActivityKit
