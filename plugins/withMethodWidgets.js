@@ -4,7 +4,6 @@ const {
   withInfoPlist,
   withDangerousMod,
   withXcodeProject,
-  withPodfile,
 } = require('@expo/config-plugins');
 const path = require('path');
 const fs   = require('fs');
@@ -207,9 +206,17 @@ function withXcodeTarget(config) {
 
 // ── 5. Podfile post_install: register custom modules in ExpoModulesProvider ──
 function withPodfileRegistration(config) {
-  return withPodfile(config, (c) => {
-    const appName = c.modRequest.projectName;
-    const snippet = `
+  return withDangerousMod(config, [
+    'ios',
+    async (c) => {
+      const appName = c.modRequest.projectName;
+      const podfilePath = path.join(c.modRequest.platformProjectRoot, 'Podfile');
+      if (!fs.existsSync(podfilePath)) return c;
+
+      let podfile = fs.readFileSync(podfilePath, 'utf8');
+      if (podfile.includes('MethodSharedDataModule')) return c;
+
+      podfile += `
 # Method: register custom native modules in ExpoModulesProvider
 post_install do |installer|
   app_dir = File.join(File.dirname(__FILE__), '${appName}')
@@ -231,11 +238,10 @@ post_install do |installer|
   end
 end
 `;
-    if (!c.modResults.includes('MethodSharedDataModule')) {
-      c.modResults += snippet;
-    }
-    return c;
-  });
+      fs.writeFileSync(podfilePath, podfile);
+      return c;
+    },
+  ]);
 }
 
 // ── helpers ───────────────────────────────────────────────────────────────────
