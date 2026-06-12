@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, Modal, TouchableOpacity,
-  Animated, Easing, Alert,
+  Animated, Easing, Alert, PanResponder,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,6 +30,7 @@ export default function SessionPickerModal({
   onClose,
 }: Props) {
   const translateY = useRef(new Animated.Value(520)).current;
+  const dragY = useRef(new Animated.Value(0)).current;
   const [selected, setSelected] = useState(initialInterval);
   const [customMinutes, setCustomMinutes] = useState(
     FREE_PRESETS.includes(initialInterval) ? 45 : initialInterval
@@ -37,8 +38,30 @@ export default function SessionPickerModal({
 
   const isCustomSelected = !FREE_PRESETS.includes(selected);
 
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gs) => gs.dy > 8 && gs.dy > Math.abs(gs.dx),
+      onPanResponderMove: (_, gs) => {
+        if (gs.dy > 0) dragY.setValue(gs.dy);
+      },
+      onPanResponderRelease: (_, gs) => {
+        if (gs.dy > 80 || gs.vy > 0.8) {
+          dismiss(onClose);
+        } else {
+          Animated.spring(dragY, {
+            toValue: 0,
+            useNativeDriver: true,
+            tension: 120,
+            friction: 10,
+          }).start();
+        }
+      },
+    })
+  ).current;
+
   useEffect(() => {
     if (visible) {
+      dragY.setValue(0);
       setSelected(initialInterval);
       if (!FREE_PRESETS.includes(initialInterval)) setCustomMinutes(initialInterval);
       Animated.timing(translateY, {
@@ -75,7 +98,10 @@ export default function SessionPickerModal({
         />
       </BlurView>
 
-      <Animated.View style={[styles.sheet, { transform: [{ translateY }] }]}>
+      <Animated.View
+        style={[styles.sheet, { transform: [{ translateY: Animated.add(translateY, dragY) }] }]}
+        {...panResponder.panHandlers}
+      >
         <View style={styles.topShine} />
         <View style={styles.handle} />
 
