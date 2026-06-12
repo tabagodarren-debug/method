@@ -29,8 +29,8 @@ const SLIDE_DURATION_MS = 20000;
 const FADE_DURATION_MS = 900;
 
 const { width: SW, height: SH } = Dimensions.get('screen');
-const TIMER_W = 320;
-const TIMER_H = 110;
+const TIMER_W = 360;
+const TIMER_H = 130;
 
 const SLIDES: ImageSourcePropType[] = [
   require('../../assets/slideshow/1.png'),
@@ -193,7 +193,7 @@ export default function FocusSessionScreen() {
       )}
       <View style={styles.scrim} />
 
-      {/* Glass-texture timer — blurred background cut through digit shapes */}
+      {/* Liquid glass timer — frosted background cut through digit shapes */}
       <View style={styles.timerArea} pointerEvents="none">
         <MaskedView
           style={{ width: TIMER_W, height: TIMER_H }}
@@ -203,16 +203,21 @@ export default function FocusSessionScreen() {
             </View>
           }
         >
-          {/* The blurred background shows through the digit shapes */}
-          <BlurView intensity={40} tint="dark" style={{ width: TIMER_W, height: TIMER_H }} />
+          {/* High-intensity blur visible through digit cutouts */}
+          <BlurView intensity={90} tint="light" style={{ width: TIMER_W, height: TIMER_H }} />
+          {/* White fill makes glass look luminous */}
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(255,255,255,0.22)' }]} />
+          {/* Subtle top-to-bottom gradient for depth */}
           <LinearGradient
-            colors={['rgba(255,255,255,0.14)', 'rgba(255,255,255,0.04)']}
+            colors={['rgba(255,255,255,0.30)', 'rgba(255,255,255,0.08)']}
             style={StyleSheet.absoluteFill}
             start={{ x: 0.5, y: 0 }}
             end={{ x: 0.5, y: 1 }}
           />
         </MaskedView>
+        {/* Rim light — tight bright edge around each digit */}
         <Text style={styles.digitEdge}>{timeStr}</Text>
+        {/* Outer luminance halo */}
         <Text style={styles.digitGlow}>{timeStr}</Text>
       </View>
 
@@ -274,30 +279,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   maskDigits: {
-    fontSize: 72,
+    fontSize: 86,
     fontWeight: '800',
     color: 'black',
-    letterSpacing: 5,
+    letterSpacing: 2,
   },
   digitEdge: {
     position: 'absolute',
-    fontSize: 72,
+    fontSize: 86,
     fontWeight: '800',
-    letterSpacing: 5,
+    letterSpacing: 2,
     color: 'transparent',
-    textShadowColor: 'rgba(255,255,255,1.0)',
+    textShadowColor: 'rgba(255,255,255,0.95)',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
+    textShadowRadius: 5,
   },
   digitGlow: {
     position: 'absolute',
-    fontSize: 72,
+    fontSize: 86,
     fontWeight: '800',
-    letterSpacing: 5,
+    letterSpacing: 2,
     color: 'transparent',
-    textShadowColor: 'rgba(255,255,255,0.50)',
+    textShadowColor: 'rgba(255,255,255,0.30)',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 22,
+    textShadowRadius: 28,
   },
 
   controls:    { position: 'absolute', left: 20, right: 20, gap: 8 },
