@@ -10,10 +10,12 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Colors } from '../constants/colors';
 import type { Rank } from '../utils/ranks';
+import type { SessionStats } from '../types';
 
 type Props = {
   visible: boolean;
   rank: Rank | null;
+  stats?: SessionStats | null;
   onShare: () => void;
   onContinue: () => void;
 };
@@ -44,7 +46,7 @@ function AnimatedLetter({ char, delay, trigger }: { char: string; delay: number;
   );
 }
 
-export default function RankUpCard({ visible, rank, onShare, onContinue }: Props) {
+export default function RankUpCard({ visible, rank, stats, onShare, onContinue }: Props) {
   const handleShare = async () => {
     if (!rank) return;
     try {
@@ -110,6 +112,15 @@ export default function RankUpCard({ visible, rank, onShare, onContinue }: Props
 
   const chars = rank.title.toUpperCase().split('');
 
+  const totalHours   = stats ? Math.floor(stats.totalMinutes / 60) : 0;
+  const remainingMin = stats ? stats.totalMinutes % 60 : 0;
+  const timeLabel    = totalHours > 0 ? `${totalHours}h ${remainingMin}m` : `${remainingMin}m`;
+  const statChips = stats ? [
+    { value: stats.sessionsCompleted.toString(), label: 'SESSIONS' },
+    { value: `${stats.totalEarned}`, label: 'MERIT EARNED' },
+    { value: timeLabel, label: 'LOCKED IN' },
+  ] : [];
+
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onContinue}>
       <Animated.View style={[StyleSheet.absoluteFill, backdropStyle]}>
@@ -163,6 +174,17 @@ export default function RankUpCard({ visible, rank, onShare, onContinue }: Props
         <Animated.Text style={[styles.subtext, labelStyle]}>
           New affirmations unlocked.
         </Animated.Text>
+
+        {statChips.length > 0 && (
+          <Animated.View style={[styles.statsRow, footerStyle]}>
+            {statChips.map((chip, i) => (
+              <View key={i} style={styles.statChip}>
+                <Text style={styles.statValue}>{chip.value}</Text>
+                <Text style={styles.statLabel}>{chip.label}</Text>
+              </View>
+            ))}
+          </Animated.View>
+        )}
 
         <Animated.View style={[styles.footer, footerStyle]}>
           <TouchableOpacity style={styles.shareBtn} onPress={handleShare} activeOpacity={0.8}>
@@ -273,6 +295,34 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 1.2,
     color: Colors.pureWhite,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 32,
+  },
+  statChip: {
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 16,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255,255,255,0.10)',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    minWidth: 80,
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.pureWhite,
+    letterSpacing: -0.5,
+    marginBottom: 3,
+  },
+  statLabel: {
+    fontSize: 9,
+    fontWeight: '500',
+    letterSpacing: 1.2,
+    color: 'rgba(255,255,255,0.35)',
   },
   continueBtn:  { paddingVertical: 6 },
   continueLabel: {

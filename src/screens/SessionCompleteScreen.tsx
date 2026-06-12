@@ -67,6 +67,7 @@ export default function SessionCompleteScreen() {
   const [affirmation, setAffirmation] = useState('');
   const [rankedUp, setRankedUp] = useState<RankType | null>(null);
   const [showCeremony, setShowCeremony] = useState(false);
+  const [sessionStats, setSessionStats] = useState<import('../types').SessionStats | null>(null);
 
   const particles = useMemo(
     () =>
@@ -85,6 +86,7 @@ export default function SessionCompleteScreen() {
       ([p, stats]) => {
         setPersona(p);
         setTotalEarned(stats.totalEarned);
+        setSessionStats(stats);
 
         const prevTotal = stats.totalEarned - earnedThisSession;
         const newRank = didRankUp(prevTotal, stats.totalEarned);
@@ -171,6 +173,7 @@ export default function SessionCompleteScreen() {
       <RankUpCard
         visible={showCeremony}
         rank={rankedUp}
+        stats={sessionStats}
         onShare={() => {
           setShowCeremony(false);
           nav.replace('Break');
