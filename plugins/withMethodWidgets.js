@@ -149,11 +149,14 @@ function withXcodeTarget(config) {
     ];
     {
       const objs = project.hash.project.objects;
-      const extTargetObj = objs['PBXNativeTarget'][extTarget.uuid];
+      // Use pbxNativeTarget directly — avoids UUID key-format mismatches
+      const extBuildPhases = extTarget.pbxNativeTarget.buildPhases || [];
       let extSourcesPhaseUUID = null;
-      for (const phase of (extTargetObj.buildPhases || [])) {
-        if (objs['PBXSourcesBuildPhase']?.[phase.value]) {
-          extSourcesPhaseUUID = phase.value; break;
+      for (const phase of extBuildPhases) {
+        // buildPhases entries may be plain UUID strings or { value, comment } objects
+        const uuid = typeof phase === 'string' ? phase : phase.value;
+        if (uuid && objs['PBXSourcesBuildPhase']?.[uuid]) {
+          extSourcesPhaseUUID = uuid; break;
         }
       }
       if (extSourcesPhaseUUID) {
@@ -212,8 +215,9 @@ function withXcodeTarget(config) {
       // Find Sources build phase for main target
       let sourcesBuildPhaseUUID = null;
       for (const phase of (mainTarget.buildPhases || [])) {
-        if (objects['PBXSourcesBuildPhase']?.[phase.value]) {
-          sourcesBuildPhaseUUID = phase.value;
+        const uuid = typeof phase === 'string' ? phase : phase.value;
+        if (uuid && objects['PBXSourcesBuildPhase']?.[uuid]) {
+          sourcesBuildPhaseUUID = uuid;
           break;
         }
       }
