@@ -8,7 +8,8 @@ import { Colors } from '../constants/colors';
 import { Typography } from '../constants/typography';
 import { loadPersona, clearPersona } from '../storage/persona';
 import { checkAppUnlock } from '../services/purchases';
-import { resetStats } from '../storage/stats';
+import { resetStats, loadStats } from '../storage/stats';
+import type { SessionStats } from '../types';
 import RankUpCard from '../components/RankUpCard';
 import { RANKS } from '../utils/ranks';
 import type { PersonaData, RootStackParamList } from '../types';
@@ -35,11 +36,13 @@ export default function SettingsScreen() {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [showRankTest, setShowRankTest] = useState(false);
   const [testRankIndex, setTestRankIndex] = useState(1);
+  const [testStats, setTestStats] = useState<SessionStats | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       loadPersona().then(setPersona);
       checkAppUnlock().then(setIsUnlocked);
+      loadStats().then(setTestStats);
     }, [])
   );
 
@@ -137,6 +140,7 @@ export default function SettingsScreen() {
       <RankUpCard
         visible={showRankTest}
         rank={RANKS[testRankIndex]}
+        stats={testStats}
         onShare={() => setShowRankTest(false)}
         onContinue={() => setShowRankTest(false)}
       />
