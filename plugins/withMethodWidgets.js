@@ -75,9 +75,33 @@ function withWidgetFiles(config) {
         fs.copyFileSync(path.join(SWIFT_DIR, f), path.join(appDir, f));
       }
 
+      // Write a helper script that patches ExpoModulesProvider.swift to register our modules.
+      // This is called by an Xcode Run Script build phase (runs before compilation).
+      const scriptPath = path.join(root, 'ios', 'patch_expo_modules.sh');
+      fs.writeFileSync(scriptPath, patchScript(appName));
+      fs.chmodSync(scriptPath, 0o755);
+
       return c;
     },
   ]);
+}
+
+function patchScript(appName) {
+  // Uses python3 (available on macOS with Xcode Command Line Tools).
+  // Matches 'return [\n' (multi-line array) to avoid matching 'return []' (empty arrays).
+  return `#!/bin/sh
+PROVIDER="$SRCROOT/${appName}/ExpoModulesProvider.swift"
+if [ -f "$PROVIDER" ] && ! grep -q "MethodSharedDataModule" "$PROVIDER"; then
+  python3 -c "
+import sys
+f = sys.argv[1]
+c = open(f).read()
+p = c.replace('return [\\n', 'return [\\n      MethodSharedDataModule.self,\\n      MethodLiveActivityModule.self,\\n', 1)
+if p != c:
+    open(f, 'w').write(p)
+" "$PROVIDER"
+fi
+`;
 }
 
 function withXcodeTarget(config) {
@@ -144,8 +168,58 @@ function withXcodeTarget(config) {
       }
     }
 
+    if (mainTargetUuid) {
+      addPatchScriptPhase(project, mainTargetUuid);
+    }
+
     return c;
   });
+}
+
+function addPatchScriptPhase(project, targetUuid) {
+  const objects = project.hash.project.objects;
+  const nativeTarget = objects.PBXNativeTarget?.[targetUuid];
+  if (!nativeTarget) return;
+
+  objects.PBXShellScriptBuildPhase ||= {};
+
+  // Idempotency: skip if our phase is already present
+  for (const phase of nativeTarget.buildPhases || []) {
+    const uuid = typeof phase === 'string' ? phase : phase.value;
+    const sp = objects.PBXShellScriptBuildPhase[uuid];
+    if (sp && typeof sp.shellScript === 'string' && sp.shellScript.includes('patch_expo_modules')) return;
+  }
+
+  const scriptUuid = project.generateUuid();
+  objects.PBXShellScriptBuildPhase[scriptUuid] = {
+    isa: 'PBXShellScriptBuildPhase',
+    buildActionMask: 2147483647,
+    files: [],
+    inputFileListPaths: [],
+    inputPaths: [],
+    name: '"[Method] Patch ExpoModulesProvider"',
+    outputFileListPaths: [],
+    outputPaths: [],
+    runOnlyForDeploymentPostprocessing: 0,
+    shellPath: '/bin/sh',
+    shellScript: '"$SRCROOT/patch_expo_modules.sh"',
+  };
+  objects.PBXShellScriptBuildPhase[`${scriptUuid}_comment`] = '[Method] Patch ExpoModulesProvider';
+
+  // Insert just before the Compile Sources phase so any earlier script phases
+  // (e.g. Expo's own "Generate ExpoModulesProvider") run first, then we patch.
+  const phases = nativeTarget.buildPhases;
+  const sourcesIdx = phases.findIndex((p) => {
+    const u = typeof p === 'string' ? p : p.value;
+    return u && objects.PBXSourcesBuildPhase?.[u];
+  });
+
+  const entry = { value: scriptUuid, comment: '[Method] Patch ExpoModulesProvider' };
+  if (sourcesIdx >= 0) {
+    phases.splice(sourcesIdx, 0, entry);
+  } else {
+    phases.unshift(entry);
+  }
 }
 
 function configureExtensionBuildSettings(project, nativeTarget) {
