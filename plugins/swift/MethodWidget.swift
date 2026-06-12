@@ -186,7 +186,7 @@ struct MethodWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: MethodProvider()) { entry in
             MethodEntryView(entry: entry)
-                .containerBackground(darkBg, for: .widget)
+                .widgetBackground(darkBg)
         }
         .configurationDisplayName("Method")
         .description("Your rank, merit, and streak.")

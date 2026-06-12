@@ -12,7 +12,7 @@ struct MethodLiveActivityWidget: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: MethodLiveActivityAttributes.self) { context in
             LockScreenView(state: context.state, attrs: context.attributes)
-                .containerBackground(Color(red: 0.102, green: 0.102, blue: 0.102), for: .widget)
+                .widgetBackground(Color(red: 0.102, green: 0.102, blue: 0.102))
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {

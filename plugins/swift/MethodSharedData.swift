@@ -1,5 +1,17 @@
 // plugins/swift/MethodSharedData.swift
 import Foundation
+import SwiftUI
+
+extension View {
+    @ViewBuilder
+    func widgetBackground(_ color: Color) -> some View {
+        if #available(iOS 17.0, *) {
+            self.containerBackground(color, for: .widget)
+        } else {
+            self.background(color)
+        }
+    }
+}
 
 struct MethodData {
     let totalEarned: Int
