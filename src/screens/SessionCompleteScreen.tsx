@@ -60,7 +60,7 @@ export default function SessionCompleteScreen() {
           <MeritAmount
             amount={earnedThisSession}
             prefix="+"
-            symbolSize={50}
+            symbolSize={70}
             textStyle={styles.earnAmount}
             color={Colors.pureWhite}
           />
@@ -88,7 +88,7 @@ export default function SessionCompleteScreen() {
             percent={progress.percent}
             leftLabel={progress.current.title}
             rightLabel={
-              progress.isMax ? 'MAX RANK' : `${progress.meritToNext} to ${progress.next!.title}`
+              progress.isMax ? 'MAX RANK' : `${progress.meritToNext} MERIT$ TO RANK`
             }
           />
         </Animated.View>
