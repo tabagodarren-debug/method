@@ -16,6 +16,8 @@ export const DEFAULT_STATS: SessionStats = {
   lastSessionDate: '',
   totalMinutes: 0,
   dailySessions: {},
+  dailyEarned: {},
+  dailyLost: {},
 };
 
 export const loadStats = async (): Promise<SessionStats> => {
@@ -40,6 +42,8 @@ export const recordSession = async (dateStr: string, earnedAmount: number, inter
   stats.totalMinutes += intervalMinutes;
   stats.dailySessions = stats.dailySessions ?? {};
   stats.dailySessions[dateStr] = (stats.dailySessions[dateStr] ?? 0) + 1;
+  stats.dailyEarned = stats.dailyEarned ?? {};
+  stats.dailyEarned[dateStr] = (stats.dailyEarned[dateStr] ?? 0) + earnedAmount;
 
   if (stats.lastSessionDate !== dateStr) {
     const isConsecutive = isYesterday(stats.lastSessionDate, dateStr);
@@ -56,8 +60,11 @@ export const recordSession = async (dateStr: string, earnedAmount: number, inter
 
 export const recordAbandon = async (): Promise<SessionStats> => {
   const stats = await loadStats();
+  const today = new Date().toISOString().slice(0, 10);
   stats.sessionsAbandoned += 1;
   stats.totalEarned = Math.max(0, stats.totalEarned - ABANDON_PENALTY);
+  stats.dailyLost = stats.dailyLost ?? {};
+  stats.dailyLost[today] = (stats.dailyLost[today] ?? 0) + ABANDON_PENALTY;
   await saveStats(stats);
   const persona = await loadPersona();
   updateSharedData(buildSnapshot(stats, persona)).catch(() => {});

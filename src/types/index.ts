@@ -18,6 +18,8 @@ export type SessionStats = {
   lastSessionDate: string;
   totalMinutes: number;
   dailySessions: Record<string, number>;
+  dailyEarned: Record<string, number>;
+  dailyLost: Record<string, number>;
 };
 
 export type OnboardingStackParamList = {

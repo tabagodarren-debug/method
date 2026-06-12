@@ -37,7 +37,7 @@ function yesterdayKey(): string {
   return d.toISOString().split('T')[0];
 }
 
-function StatPill({ label, sessions, merit }: { label: string; sessions: number; merit: number }) {
+function StatPill({ label, sessions, earned, lost }: { label: string; sessions: number; earned: number; lost: number }) {
   return (
     <View style={styles.statPill}>
       <BlurView intensity={24} tint="dark" style={StyleSheet.absoluteFill} />
@@ -52,7 +52,8 @@ function StatPill({ label, sessions, merit }: { label: string; sessions: number;
         {sessions > 0 ? sessions : '—'}
         {sessions > 0 ? <Text style={styles.statPillUnit}> {sessions === 1 ? 'session' : 'sessions'}</Text> : null}
       </Text>
-      {sessions > 0 && <Text style={styles.statPillMerit}>+{merit} MERIT$</Text>}
+      {earned > 0 && <Text style={[styles.statPillMerit, { color: '#52C97A' }]}>+{earned} MERIT$</Text>}
+      {lost > 0 && <Text style={[styles.statPillMerit, { color: '#FF6B6B' }]}>-{lost} MERIT$</Text>}
     </View>
   );
 }
@@ -77,10 +78,14 @@ export default function HomeScreen() {
     : '';
 
   const dailySessions = stats?.dailySessions ?? {};
+  const dailyEarned = stats?.dailyEarned ?? {};
+  const dailyLost = stats?.dailyLost ?? {};
   const todaySessions = dailySessions[todayKey()] ?? 0;
-  const todayMerit = todaySessions * 25;
+  const todayEarned = dailyEarned[todayKey()] ?? 0;
+  const todayLost = dailyLost[todayKey()] ?? 0;
   const yesterdaySessions = dailySessions[yesterdayKey()] ?? 0;
-  const yesterdayMerit = yesterdaySessions * 25;
+  const yesterdayEarned = dailyEarned[yesterdayKey()] ?? 0;
+  const yesterdayLost = dailyLost[yesterdayKey()] ?? 0;
 
   const countdown = persona ? getGoalCountdown(persona) : null;
 
@@ -138,8 +143,8 @@ export default function HomeScreen() {
 
         {/* Today + Yesterday stat pills */}
         <Animated.View entering={FadeInDown.delay(320).duration(500)} style={styles.statRow}>
-          <StatPill label="Today" sessions={todaySessions} merit={todayMerit} />
-          <StatPill label="Yesterday" sessions={yesterdaySessions} merit={yesterdayMerit} />
+          <StatPill label="Today" sessions={todaySessions} earned={todayEarned} lost={todayLost} />
+          <StatPill label="Yesterday" sessions={yesterdaySessions} earned={yesterdayEarned} lost={yesterdayLost} />
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(400).duration(500)}>
