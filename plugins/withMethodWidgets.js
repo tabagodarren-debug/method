@@ -154,6 +154,7 @@ function withXcodeTarget(config) {
     project.addToPbxGroup(extGroup.uuid, rootGroupUuid);
 
     // Add Swift source files to extension target
+    // Use filename only — group path 'MethodWidget' already provides the directory
     const extSources = [
       'MethodWidgetBundle.swift',
       'MethodWidget.swift',
@@ -162,11 +163,7 @@ function withXcodeTarget(config) {
       'MethodSharedData.swift',
     ];
     for (const f of extSources) {
-      project.addSourceFile(
-        `${EXTENSION_NAME}/${f}`,
-        { target: extTarget.uuid },
-        extGroup.uuid
-      );
+      project.addSourceFile(f, { target: extTarget.uuid }, extGroup.uuid);
     }
 
     // Link WidgetKit and ActivityKit
@@ -196,7 +193,8 @@ function withXcodeTarget(config) {
         'MethodLiveActivityAttributes.swift',
       ];
       for (const f of moduleFiles) {
-        project.addSourceFile(`${appName}/${f}`, { target: mainTargetUuid }, mainGroupKey);
+        // Filename only — main group path already provides the app directory
+        project.addSourceFile(f, { target: mainTargetUuid }, mainGroupKey);
       }
     }
 
