@@ -179,15 +179,26 @@ function withXcodeTarget(config) {
     });
 
     // Add native module Swift files to main app target
-    const mainTarget = project.getFirstTarget().firstTarget;
-    const moduleFiles = [
-      'MethodSharedDataModule.swift',
-      'MethodLiveActivityModule.swift',
-      'MethodModulesProvider.swift',
-      'MethodLiveActivityAttributes.swift',
-    ];
-    for (const f of moduleFiles) {
-      project.addSourceFile(`${appName}/${f}`, { target: mainTarget.uuid });
+    // getFirstTarget() can return a comment entry (string), so find by name instead
+    let mainTargetUuid = null;
+    for (const [key, target] of Object.entries(targets)) {
+      if (key.endsWith('_comment')) continue;
+      if (target && typeof target === 'object') {
+        const name = (target.name ?? '').replace(/^"|"$/g, '');
+        if (name === appName) { mainTargetUuid = key; break; }
+      }
+    }
+    if (mainTargetUuid) {
+      const mainGroupKey = project.findPBXGroupKey({ name: appName });
+      const moduleFiles = [
+        'MethodSharedDataModule.swift',
+        'MethodLiveActivityModule.swift',
+        'MethodModulesProvider.swift',
+        'MethodLiveActivityAttributes.swift',
+      ];
+      for (const f of moduleFiles) {
+        project.addSourceFile(`${appName}/${f}`, { target: mainTargetUuid }, mainGroupKey);
+      }
     }
 
     return c;
