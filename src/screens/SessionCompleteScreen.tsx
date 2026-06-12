@@ -52,7 +52,7 @@ function MoneyParticle({ x, delay, rotation }: { x: number; delay: number; rotat
 
   return (
     <Animated.View style={style}>
-      <MaterialCommunityIcons name="currency-usd" size={30} color="rgba(255,255,255,0.9)" />
+      <MaterialCommunityIcons name="cash" size={30} color="rgba(255,255,255,0.9)" />
     </Animated.View>
   );
 }
