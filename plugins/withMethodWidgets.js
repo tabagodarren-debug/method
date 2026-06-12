@@ -82,25 +82,10 @@ function withWidgetFiles(config) {
       const moduleFiles = [
         'MethodSharedDataModule.swift',
         'MethodLiveActivityModule.swift',
-        'MethodModulesProvider.swift',
-        'MethodLiveActivityAttributes.swift', // needed by the module
+        'MethodLiveActivityAttributes.swift',
       ];
       for (const f of moduleFiles) {
         fs.copyFileSync(path.join(SWIFT_DIR, f), path.join(appDir, f));
-      }
-
-      // Patch AppDelegate.swift to use MethodModulesProvider
-      const delegatePath = path.join(appDir, 'AppDelegate.swift');
-      if (fs.existsSync(delegatePath)) {
-        let src = fs.readFileSync(delegatePath, 'utf8');
-        if (!src.includes('MethodModulesProvider')) {
-          // Insert override before the closing brace of the class
-          src = src.replace(
-            /^(}\s*)$/m,
-            `  override func modulesProvider() -> ModulesProvider {\n    return MethodModulesProvider()\n  }\n$1`
-          );
-          fs.writeFileSync(delegatePath, src, 'utf8');
-        }
       }
 
       return c;
@@ -217,7 +202,6 @@ function withXcodeTarget(config) {
       const moduleFiles = [
         'MethodSharedDataModule.swift',
         'MethodLiveActivityModule.swift',
-        'MethodModulesProvider.swift',
         'MethodLiveActivityAttributes.swift',
       ];
 
@@ -304,17 +288,12 @@ function withPodfileRegistration(config) {
       // Inject into existing post_install block (CocoaPods forbids multiple blocks)
       const injection = `
   # Method: register custom native modules in ExpoModulesProvider
-  app_dir = File.join(File.dirname(__FILE__), '${appName}')
-  delegate_path = File.join(app_dir, 'AppDelegate.swift')
-  already_patched = File.exist?(delegate_path) && File.read(delegate_path).include?('MethodModulesProvider')
-  unless already_patched
-    provider_path = File.join(app_dir, 'ExpoModulesProvider.swift')
-    if File.exist?(provider_path)
-      content = File.read(provider_path)
-      unless content.include?('MethodSharedDataModule')
-        content.sub!(/(\\s+return \\[)/, "\\n      MethodSharedDataModule.self,\\n      MethodLiveActivityModule.self,\\1")
-        File.write(provider_path, content)
-      end
+  provider_path = File.join(File.dirname(__FILE__), '${appName}', 'ExpoModulesProvider.swift')
+  if File.exist?(provider_path)
+    content = File.read(provider_path)
+    unless content.include?('MethodSharedDataModule')
+      content.sub!(/return \\[/, "return [\\n      MethodSharedDataModule.self,\\n      MethodLiveActivityModule.self,")
+      File.write(provider_path, content)
     end
   end
 `;
