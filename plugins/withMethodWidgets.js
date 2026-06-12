@@ -185,7 +185,6 @@ function withXcodeTarget(config) {
       }
     }
     if (mainTargetUuid) {
-      const mainGroupKey = project.findPBXGroupKey({ name: appName });
       const moduleFiles = [
         'MethodSharedDataModule.swift',
         'MethodLiveActivityModule.swift',
@@ -193,8 +192,8 @@ function withXcodeTarget(config) {
         'MethodLiveActivityAttributes.swift',
       ];
       for (const f of moduleFiles) {
-        // Filename only — main group path already provides the app directory
-        project.addSourceFile(f, { target: mainTargetUuid }, mainGroupKey);
+        // Full relative path, no group → anchors to SOURCE_ROOT → ios/Method/<file>
+        project.addSourceFile(`${appName}/${f}`, { target: mainTargetUuid });
       }
     }
 
