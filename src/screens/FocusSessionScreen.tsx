@@ -29,8 +29,8 @@ const SLIDE_DURATION_MS = 20000;
 const FADE_DURATION_MS = 900;
 
 const { width: SW, height: SH } = Dimensions.get('screen');
-const TIMER_W = 360;
-const TIMER_H = 130;
+const TIMER_W = 320;
+const TIMER_H = 112;
 
 const SLIDES: ImageSourcePropType[] = [
   require('../../assets/slideshow/1.png'),
@@ -178,6 +178,7 @@ export default function FocusSessionScreen() {
   };
 
   const timeStr = formatTime(timeLeft);
+  const timerTop = Math.max(insets.top + 54, SH * 0.095);
 
   return (
     <View style={styles.root}>
@@ -194,7 +195,7 @@ export default function FocusSessionScreen() {
       <View style={styles.scrim} />
 
       {/* Liquid glass timer — frosted background cut through digit shapes */}
-      <View style={styles.timerArea} pointerEvents="none">
+      <View style={[styles.timerArea, { top: timerTop }]} pointerEvents="none">
         <MaskedView
           style={{ width: TIMER_W, height: TIMER_H }}
           maskElement={
@@ -204,21 +205,32 @@ export default function FocusSessionScreen() {
           }
         >
           {/* High-intensity blur visible through digit cutouts */}
-          <BlurView intensity={90} tint="light" style={{ width: TIMER_W, height: TIMER_H }} />
+          <BlurView intensity={70} tint="light" style={{ width: TIMER_W, height: TIMER_H }} />
           {/* White fill makes glass look luminous */}
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(255,255,255,0.22)' }]} />
+          <View style={styles.digitGlassBase} />
           {/* Subtle top-to-bottom gradient for depth */}
           <LinearGradient
-            colors={['rgba(255,255,255,0.30)', 'rgba(255,255,255,0.08)']}
+            colors={[
+              'rgba(255,255,255,0.34)',
+              'rgba(255,255,255,0.10)',
+              'rgba(70,110,210,0.10)',
+              'rgba(255,255,255,0.04)',
+            ]}
             style={StyleSheet.absoluteFill}
             start={{ x: 0.5, y: 0 }}
             end={{ x: 0.5, y: 1 }}
           />
+          <LinearGradient
+            colors={['transparent', 'rgba(255,255,255,0.22)', 'transparent']}
+            style={styles.digitDiagonalShine}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+          />
         </MaskedView>
         {/* Rim light — tight bright edge around each digit */}
-        <Text style={styles.digitEdge}>{timeStr}</Text>
-        {/* Outer luminance halo */}
+        <Text style={styles.digitInnerShadow}>{timeStr}</Text>
         <Text style={styles.digitGlow}>{timeStr}</Text>
+        <Text style={styles.digitEdge}>{timeStr}</Text>
       </View>
 
       {/* Always-visible controls */}
@@ -268,7 +280,6 @@ const styles = StyleSheet.create({
     width: TIMER_W,
     height: TIMER_H,
     left: SW / 2 - TIMER_W / 2,
-    top: SH * 0.18,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -279,30 +290,52 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   maskDigits: {
-    fontSize: 86,
+    fontSize: 76,
     fontWeight: '800',
     color: 'black',
-    letterSpacing: 2,
+    letterSpacing: 1,
+  },
+  digitGlassBase: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.055)',
+  },
+  digitDiagonalShine: {
+    position: 'absolute',
+    top: -20,
+    bottom: -20,
+    left: -80,
+    width: 190,
+    transform: [{ rotate: '-18deg' }],
+  },
+  digitInnerShadow: {
+    position: 'absolute',
+    fontSize: 76,
+    fontWeight: '800',
+    letterSpacing: 1,
+    color: 'rgba(20,28,42,0.10)',
+    textShadowColor: 'rgba(0,0,0,0.20)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 3,
   },
   digitEdge: {
     position: 'absolute',
-    fontSize: 86,
+    fontSize: 76,
     fontWeight: '800',
-    letterSpacing: 2,
-    color: 'transparent',
-    textShadowColor: 'rgba(255,255,255,0.95)',
+    letterSpacing: 1,
+    color: 'rgba(255,255,255,0.24)',
+    textShadowColor: 'rgba(255,255,255,0.34)',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 5,
+    textShadowRadius: 2,
   },
   digitGlow: {
     position: 'absolute',
-    fontSize: 86,
+    fontSize: 76,
     fontWeight: '800',
-    letterSpacing: 2,
+    letterSpacing: 1,
     color: 'transparent',
-    textShadowColor: 'rgba(255,255,255,0.30)',
+    textShadowColor: 'rgba(255,255,255,0.16)',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 28,
+    textShadowRadius: 18,
   },
 
   controls:    { position: 'absolute', left: 20, right: 20, gap: 8 },
