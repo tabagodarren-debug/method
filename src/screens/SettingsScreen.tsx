@@ -8,6 +8,9 @@ import { Colors } from '../constants/colors';
 import { Typography } from '../constants/typography';
 import { loadPersona, clearPersona } from '../storage/persona';
 import { checkAppUnlock } from '../services/purchases';
+import { resetStats } from '../storage/stats';
+import RankUpCard from '../components/RankUpCard';
+import { RANKS } from '../utils/ranks';
 import type { PersonaData, RootStackParamList } from '../types';
 
 const TIMELINE_LABELS: Record<string, string> = {
@@ -30,6 +33,8 @@ export default function SettingsScreen() {
   const nav = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [persona, setPersona] = useState<PersonaData | null>(null);
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [showRankTest, setShowRankTest] = useState(false);
+  const [testRankIndex, setTestRankIndex] = useState(1);
 
   useFocusEffect(
     useCallback(() => {
@@ -37,6 +42,18 @@ export default function SettingsScreen() {
       checkAppUnlock().then(setIsUnlocked);
     }, [])
   );
+
+  const handleResetStats = () => {
+    Alert.alert('Reset all stats?', 'Merit, sessions, streaks and rank will be wiped.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Reset', style: 'destructive', onPress: () => resetStats() },
+    ]);
+  };
+
+  const handleTestRankUp = () => {
+    setTestRankIndex(i => (i % (RANKS.length - 1)) + 1);
+    setShowRankTest(true);
+  };
 
   const handleResetPersona = () => {
     Alert.alert('Reset persona?', 'This will restart onboarding.', [
@@ -92,7 +109,37 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         )}
 
+        <Text style={[styles.sectionTitle, { marginTop: 32 }]}>DEVELOPER</Text>
+        <View style={styles.card}>
+          <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFill} />
+          <View style={styles.cardOverlay} />
+          <View style={styles.cardInner}>
+            <TouchableOpacity style={[styles.row, styles.rowBorder]} onPress={handleResetStats}>
+              <Text style={[styles.rowLabel, { color: '#FF6B6B' }]}>Reset merits, sessions & rank</Text>
+              <Ionicons name="trash-outline" size={16} color="#FF6B6B" />
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.row, styles.rowBorder]} onPress={handleTestRankUp}>
+              <Text style={styles.rowLabel}>Test rank up screen</Text>
+              <Ionicons name="trophy-outline" size={16} color={Colors.dim} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.row}
+              onPress={() => nav.reset({ index: 0, routes: [{ name: 'Onboarding' }] })}
+            >
+              <Text style={styles.rowLabel}>Go to onboarding</Text>
+              <Ionicons name="arrow-forward-outline" size={16} color={Colors.dim} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
       </ScrollView>
+
+      <RankUpCard
+        visible={showRankTest}
+        rank={RANKS[testRankIndex]}
+        onShare={() => setShowRankTest(false)}
+        onContinue={() => setShowRankTest(false)}
+      />
     </SafeAreaView>
   );
 }

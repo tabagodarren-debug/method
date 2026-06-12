@@ -58,6 +58,10 @@ export const recordSession = async (dateStr: string, earnedAmount: number, inter
   return stats;
 };
 
+export const resetStats = async (): Promise<void> => {
+  await AsyncStorage.setItem(STATS_KEY, JSON.stringify({ ...DEFAULT_STATS }));
+};
+
 export const recordAbandon = async (): Promise<SessionStats> => {
   const stats = await loadStats();
   const today = new Date().toISOString().slice(0, 10);
