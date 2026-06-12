@@ -92,14 +92,16 @@ export default function FocusSessionScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      loadInterval().then(setIntervalMinutes);
-      Promise.all([loadPersona(), loadStats()]).then(([persona, stats]) => {
-        const rank = getRankProgress(stats.totalEarned).current;
-        startLiveActivity({
-          personaName:     persona?.name ?? '',
-          rankTitle:       rank.title,
-          intervalMinutes: intervalMinutes,
-          projectedMerit:  calculateMerit(intervalMinutes),
+      loadInterval().then((loaded) => {
+        setIntervalMinutes(loaded);
+        Promise.all([loadPersona(), loadStats()]).then(([persona, stats]) => {
+          const rank = getRankProgress(stats.totalEarned).current;
+          startLiveActivity({
+            personaName:     persona?.name ?? '',
+            rankTitle:       rank.title,
+            intervalMinutes: loaded,
+            projectedMerit:  calculateMerit(loaded),
+          });
         });
       });
       if (hasTracks()) {
