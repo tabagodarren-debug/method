@@ -191,9 +191,68 @@ function withXcodeTarget(config) {
         'MethodModulesProvider.swift',
         'MethodLiveActivityAttributes.swift',
       ];
-      for (const f of moduleFiles) {
-        // Full relative path, no group → anchors to SOURCE_ROOT → ios/Method/<file>
-        project.addSourceFile(`${appName}/${f}`, { target: mainTargetUuid });
+
+      // Direct PBX manipulation — avoids addSourceFile/addPluginFile crash
+      const objects = project.hash.project.objects;
+      const mainTarget = objects['PBXNativeTarget'][mainTargetUuid];
+
+      // Find Sources build phase for main target
+      let sourcesBuildPhaseUUID = null;
+      for (const phase of (mainTarget.buildPhases || [])) {
+        if (objects['PBXSourcesBuildPhase']?.[phase.value]) {
+          sourcesBuildPhaseUUID = phase.value;
+          break;
+        }
+      }
+
+      // Find main app group (by path = appName)
+      let mainGroupKey = null;
+      for (const [key, group] of Object.entries(objects['PBXGroup'] || {})) {
+        if (key.endsWith('_comment') || !group || typeof group !== 'object') continue;
+        if ((group.path ?? '').replace(/^"|"$/g, '') === appName) {
+          mainGroupKey = key;
+          break;
+        }
+      }
+
+      if (sourcesBuildPhaseUUID) {
+        const sourcesBuildPhase = objects['PBXSourcesBuildPhase'][sourcesBuildPhaseUUID];
+        for (const f of moduleFiles) {
+          const filePath = `${appName}/${f}`;
+          // Skip if already present
+          const exists = Object.entries(objects['PBXFileReference'] || {})
+            .some(([k, r]) => !k.endsWith('_comment') && r &&
+              (r.path === filePath || r.path === `"${filePath}"`));
+          if (exists) continue;
+
+          // File reference (SOURCE_ROOT so Xcode finds ios/Method/<f>)
+          const fileRefUUID = project.generateUuid();
+          objects['PBXFileReference'][fileRefUUID] = {
+            isa: 'PBXFileReference',
+            lastKnownFileType: 'sourcecode.swift',
+            name: `"${f}"`,
+            path: `"${filePath}"`,
+            sourceTree: '"SOURCE_ROOT"',
+          };
+          objects['PBXFileReference'][`${fileRefUUID}_comment`] = f;
+
+          // Build file
+          const buildFileUUID = project.generateUuid();
+          objects['PBXBuildFile'][buildFileUUID] = {
+            isa: 'PBXBuildFile',
+            fileRef: fileRefUUID,
+            fileRef_comment: f,
+          };
+          objects['PBXBuildFile'][`${buildFileUUID}_comment`] = `${f} in Sources`;
+
+          // Add to Sources build phase
+          sourcesBuildPhase.files.push({ value: buildFileUUID, comment: `${f} in Sources` });
+
+          // Add to main group so it shows in Xcode navigator
+          if (mainGroupKey) {
+            objects['PBXGroup'][mainGroupKey].children.push({ value: fileRefUUID, comment: f });
+          }
+        }
       }
     }
 
