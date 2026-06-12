@@ -9,6 +9,7 @@ import Animated, {
   useSharedValue, useAnimatedStyle, withTiming, withDelay, withSequence, Easing,
 } from 'react-native-reanimated';
 import { Colors } from '../constants/colors';
+import MeritAmount from './MeritAmount';
 import type { Rank } from '../utils/ranks';
 import type { SessionStats } from '../types';
 
@@ -117,7 +118,7 @@ export default function RankUpCard({ visible, rank, stats, onShare, onContinue }
   const timeLabel    = totalHours > 0 ? `${totalHours}h ${remainingMin}m` : `${remainingMin}m`;
   const statChips = stats ? [
     { value: stats.sessionsCompleted.toString(), label: 'SESSIONS' },
-    { value: `${stats.totalEarned}`, label: 'MERIT EARNED' },
+    { value: stats.totalEarned, label: 'MERIT$ EARNED', merit: true },
     { value: timeLabel, label: 'LOCKED IN' },
   ] : [];
 
@@ -179,7 +180,16 @@ export default function RankUpCard({ visible, rank, stats, onShare, onContinue }
           <Animated.View style={[styles.statsRow, footerStyle]}>
             {statChips.map((chip, i) => (
               <View key={i} style={styles.statChip}>
-                <Text style={styles.statValue}>{chip.value}</Text>
+                {chip.merit ? (
+                  <MeritAmount
+                    amount={chip.value}
+                    symbolSize={16}
+                    textStyle={styles.statValue}
+                    style={styles.statMeritValue}
+                  />
+                ) : (
+                  <Text style={styles.statValue}>{chip.value}</Text>
+                )}
                 <Text style={styles.statLabel}>{chip.label}</Text>
               </View>
             ))}
@@ -316,6 +326,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.pureWhite,
     letterSpacing: -0.5,
+    marginBottom: 3,
+  },
+  statMeritValue: {
+    gap: 3,
     marginBottom: 3,
   },
   statLabel: {
