@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     letterSpacing: 1.2,
-    color: Colors.background,
+    color: Colors.pureWhite,
   },
   continueBtn:  { paddingVertical: 6 },
   continueLabel: {

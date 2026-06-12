@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     letterSpacing: 1.2,
-    color: Colors.background,
+    color: Colors.pureWhite,
   },
   cancelBtn: {
     paddingVertical: 8,
