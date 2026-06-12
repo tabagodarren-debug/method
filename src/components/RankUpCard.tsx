@@ -1,5 +1,7 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, Share } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity } from 'react-native';
+import { captureScreen } from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -46,9 +48,8 @@ export default function RankUpCard({ visible, rank, onShare, onContinue }: Props
   const handleShare = async () => {
     if (!rank) return;
     try {
-      await Share.share({
-        message: `Just ranked up to ${rank.title.toUpperCase()} on Method. Time to lock in. 🏆`,
-      });
+      const uri = await captureScreen({ format: 'png', quality: 1 });
+      await Sharing.shareAsync(uri, { mimeType: 'image/png' });
     } catch (_) {}
     onShare();
   };
