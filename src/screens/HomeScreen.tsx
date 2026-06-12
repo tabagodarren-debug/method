@@ -11,10 +11,12 @@ import MeritAmount from '../components/MeritAmount';
 import WeekStrip from '../components/WeekStrip';
 import ShareCard from '../components/ShareCard';
 import RankProgressBar from '../components/RankProgressBar';
+import SessionPickerModal from '../components/SessionPickerModal';
 import { Colors } from '../constants/colors';
 import { Typography } from '../constants/typography';
 import { loadPersona } from '../storage/persona';
 import { loadStats } from '../storage/stats';
+import { loadInterval, saveInterval } from '../storage/settings';
 import { getRankProgress } from '../utils/ranks';
 import { getGoalCountdown } from '../utils/goal';
 import type { RootStackParamList, PersonaData, SessionStats } from '../types';
@@ -63,11 +65,14 @@ export default function HomeScreen() {
   const [persona, setPersona] = useState<PersonaData | null>(null);
   const [stats, setStats] = useState<SessionStats | null>(null);
   const [showShare, setShowShare] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
+  const [interval, setIntervalMinutes] = useState(25);
 
   useFocusEffect(
     useCallback(() => {
       loadPersona().then(setPersona);
       loadStats().then(setStats);
+      loadInterval().then(setIntervalMinutes);
     }, [])
   );
 
@@ -149,8 +154,8 @@ export default function HomeScreen() {
 
         <Animated.View entering={FadeInDown.delay(400).duration(500)}>
           <PillButton
-            label="Lock in"
-            onPress={() => nav.navigate('FocusSession')}
+            label="Start Session"
+            onPress={() => setShowPicker(true)}
             style={styles.startBtn}
           />
         </Animated.View>
@@ -172,6 +177,18 @@ export default function HomeScreen() {
           persona={persona}
         />
       )}
+
+      <SessionPickerModal
+        visible={showPicker}
+        initialInterval={interval}
+        onClose={() => setShowPicker(false)}
+        onConfirm={async (minutes) => {
+          setShowPicker(false);
+          await saveInterval(minutes);
+          setIntervalMinutes(minutes);
+          nav.navigate('FocusSession');
+        }}
+      />
     </SafeAreaView>
   );
 }
