@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ScrollView, Switch } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -10,6 +10,7 @@ import { loadPersona, clearPersona } from '../storage/persona';
 import { checkAppUnlock } from '../services/purchases';
 import { resetStats, loadStats } from '../storage/stats';
 import { resetShield } from '../storage/shield';
+import { loadDevMode, saveDevMode } from '../storage/settings';
 import type { SessionStats } from '../types';
 import RankUpCard from '../components/RankUpCard';
 import { RANKS } from '../utils/ranks';
@@ -38,14 +39,21 @@ export default function SettingsScreen() {
   const [showRankTest, setShowRankTest] = useState(false);
   const [testRankIndex, setTestRankIndex] = useState(1);
   const [testStats, setTestStats] = useState<SessionStats | null>(null);
+  const [devMode, setDevMode] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       loadPersona().then(setPersona);
       checkAppUnlock().then(setIsUnlocked);
       loadStats().then(setTestStats);
+      loadDevMode().then(setDevMode);
     }, [])
   );
+
+  const toggleDevMode = (value: boolean) => {
+    setDevMode(value);
+    saveDevMode(value);
+  };
 
   const handleResetStats = () => {
     Alert.alert('Reset all stats?', 'Merit, sessions, streaks and rank will be wiped.', [
@@ -118,6 +126,15 @@ export default function SettingsScreen() {
           <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFill} />
           <View style={styles.cardOverlay} />
           <View style={styles.cardInner}>
+            <View style={[styles.row, styles.rowBorder]}>
+              <Text style={styles.rowLabel}>10s dev timer</Text>
+              <Switch
+                value={devMode}
+                onValueChange={toggleDevMode}
+                trackColor={{ false: 'rgba(255,255,255,0.10)', true: 'rgba(255,255,255,0.35)' }}
+                thumbColor={Colors.pureWhite}
+              />
+            </View>
             <TouchableOpacity style={[styles.row, styles.rowBorder]} onPress={handleResetStats}>
               <Text style={[styles.rowLabel, { color: '#FF6B6B' }]}>Reset merits, sessions & rank</Text>
               <Ionicons name="trash-outline" size={16} color="#FF6B6B" />

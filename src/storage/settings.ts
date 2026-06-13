@@ -53,6 +53,17 @@ export const getOnboardingData = async (): Promise<{ name: string }> => {
   return parseJsonObject<{ name: string }>(raw, { name: '' });
 };
 
+const DEV_MODE_KEY = '@method/devMode';
+
+export const saveDevMode = async (enabled: boolean): Promise<void> => {
+  await AsyncStorage.setItem(DEV_MODE_KEY, enabled ? 'true' : 'false');
+};
+
+export const loadDevMode = async (): Promise<boolean> => {
+  const raw = await AsyncStorage.getItem(DEV_MODE_KEY);
+  return raw === 'true';
+};
+
 const INTERVAL_KEY = '@method/interval';
 const DEFAULT_INTERVAL = 25;
 

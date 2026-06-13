@@ -13,7 +13,7 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../constants/colors';
 import { Typography } from '../constants/typography';
-import { loadInterval } from '../storage/settings';
+import { loadInterval, loadDevMode } from '../storage/settings';
 import { recordAbandon, ABANDON_PENALTY } from '../storage/stats';
 import { calculateMerit } from '../utils/merit';
 import { startLiveActivity, updateLiveActivity, endLiveActivity } from '../modules/LiveActivity';
@@ -23,8 +23,7 @@ import { getRankProgress } from '../utils/ranks';
 import { playTrack, pauseAudio, resumeAudio, skipTrack, stopAudio, getCurrentTrackName, hasTracks } from '../services/audio';
 import type { RootStackParamList } from '../types';
 
-// TODO: remove DEV_SECONDS_OVERRIDE before shipping — set to null to use real interval
-const DEV_SECONDS_OVERRIDE: number | null = 10;
+const DEV_SECONDS = 10;
 const SLIDE_DURATION_MS = 20000;
 const FADE_DURATION_MS = 900;
 
@@ -64,8 +63,9 @@ function formatTime(seconds: number): string {
 export default function FocusSessionScreen() {
   const nav = useNavigation<StackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
-  const [timeLeft, setTimeLeft] = useState(DEV_SECONDS_OVERRIDE ?? 25 * 60);
+  const [timeLeft, setTimeLeft] = useState(25 * 60);
   const [intervalMinutes, setIntervalMinutes] = useState(25);
+  const [devMode, setDevMode] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [trackName, setTrackName] = useState('No music');
   const [slideIndex, setSlideIndex] = useState(() => Math.floor(Math.random() * SLIDES.length));
@@ -94,6 +94,7 @@ export default function FocusSessionScreen() {
     useCallback(() => {
       loadInterval().then((loaded) => {
         setIntervalMinutes(loaded);
+        loadDevMode().then(setDevMode);
         Promise.all([loadPersona(), loadStats()]).then(([persona, stats]) => {
           const rank = getRankProgress(stats.totalEarned).current;
           startLiveActivity({
@@ -123,7 +124,7 @@ export default function FocusSessionScreen() {
   );
 
   const startTimer = () => {
-    const seconds = DEV_SECONDS_OVERRIDE ?? (intervalMinutes * 60);
+    const seconds = devMode ? DEV_SECONDS : (intervalMinutes * 60);
     setTimeLeft(seconds);
     endTimeRef.current = Date.now() + seconds * 1000;
     timerRef.current = setInterval(() => {
