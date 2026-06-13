@@ -61,7 +61,7 @@ export default function StreakPill({ streak, dailySessions, shieldAvailable, shi
             <Ionicons
               name="shield"
               size={15}
-              color={shieldAvailable ? '#52C97A' : 'rgba(255,255,255,0.18)'}
+              color={shieldAvailable ? Colors.pureWhite : 'rgba(255,255,255,0.18)'}
             />
             {!shieldAvailable && shieldDaysLeft !== undefined && shieldDaysLeft > 0 && (
               <Text style={styles.shieldDays}>{shieldDaysLeft}d</Text>
