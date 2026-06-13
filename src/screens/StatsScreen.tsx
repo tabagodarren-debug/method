@@ -138,6 +138,7 @@ export default function StatsScreen() {
             <View style={styles.overviewProgress}>
               <RankProgressBar
                 percent={progress.percent}
+                animateKey={animateKey}
                 leftLabel={progress.isMax ? 'Max rank reached' : progress.current.title}
                 rightLabel={
                   progress.isMax

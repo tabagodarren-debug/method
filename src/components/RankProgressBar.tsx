@@ -12,6 +12,7 @@ type Props = {
   rightLabel?: string;
   height?: number;
   animate?: boolean;
+  animateKey?: number;
 };
 
 export default function RankProgressBar({
@@ -20,12 +21,20 @@ export default function RankProgressBar({
   rightLabel,
   height = 6,
   animate = true,
+  animateKey,
 }: Props) {
   const fill = useSharedValue(animate ? 0 : percent);
 
   useEffect(() => {
     fill.value = withTiming(percent, { duration: animate ? 900 : 0, easing: Easing.out(Easing.cubic) });
   }, [percent, animate]);
+
+  useEffect(() => {
+    if (animateKey === undefined || animateKey === 0) return;
+    fill.value = 0;
+    fill.value = withTiming(percent, { duration: 900, easing: Easing.out(Easing.cubic) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [animateKey]);
 
   const fillStyle = useAnimatedStyle(() => ({
     width: `${Math.max(0, Math.min(1, fill.value)) * 100}%`,

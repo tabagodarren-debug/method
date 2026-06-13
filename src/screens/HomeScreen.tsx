@@ -172,6 +172,7 @@ export default function HomeScreen() {
 
           <RankProgressBar
             percent={progress.percent}
+            animateKey={animateKey}
             leftLabel={progress.isMax ? 'Max rank reached' : `${progress.current.title}`}
             rightLabel={progress.isMax ? 'THE LEGACY' : `${progress.meritToNext} MERIT$ TO RANK`}
           />
