@@ -144,7 +144,8 @@ export default function HomeScreen() {
   useEffect(() => {
     meritSweepX.value = withRepeat(
       withSequence(
-        withTiming(390, { duration: 1150, easing: Easing.inOut(Easing.quad) }),
+        withTiming(420, { duration: 1150, easing: Easing.inOut(Easing.quad) }),
+        withTiming(-180, { duration: 0 }),
         withDelay(6850, withTiming(-180, { duration: 0 }))
       ),
       -1,
