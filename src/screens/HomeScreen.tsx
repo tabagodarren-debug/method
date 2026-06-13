@@ -99,6 +99,13 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <View style={styles.topBar}>
+        <Text style={styles.wordmark}>method.</Text>
+        <TouchableOpacity onPress={() => nav.navigate('Settings')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <Ionicons name="settings-outline" size={20} color="rgba(255,255,255,0.35)" />
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.center}>
         <Animated.Text entering={FadeInDown.duration(500)} style={styles.greeting}>
           {getGreeting()}
@@ -199,6 +206,20 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   safe:   { flex: 1, backgroundColor: Colors.background },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 28,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  wordmark: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: Colors.pureWhite,
+    letterSpacing: -0.8,
+  },
   center: {
     flex: 1,
     alignItems: 'center',
