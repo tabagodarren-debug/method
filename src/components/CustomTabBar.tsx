@@ -4,13 +4,12 @@ import { BlurView, BlurTint } from 'expo-blur';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { FontFamily } from '../constants/typography';
 import { useTheme, useThemeId } from '../context/ThemeContext';
 import { SoundHaptics } from '../utils/soundHaptics';
 import Animated, { useSharedValue, useAnimatedStyle, withSequence, withSpring, SharedValue } from 'react-native-reanimated';
 
-function AnimatedTabIcon({ name, size, color, focused, isSettings }: {
-  name: string; size: number; color: string; focused: boolean; isSettings?: boolean;
+function AnimatedTabIcon({ name, size, color, focused, isSettings, pressKey }: {
+  name: string; size: number; color: string; focused: boolean; isSettings?: boolean; pressKey?: number;
 }) {
   const scale = useSharedValue(1);
   const rotate = useSharedValue(0);
@@ -30,6 +29,12 @@ function AnimatedTabIcon({ name, size, color, focused, isSettings }: {
       }
     }
   }, [focused]);
+
+  useEffect(() => {
+    if (!pressKey) return;
+    scale.value = 0.85;
+    scale.value = withSpring(1, { damping: 12, stiffness: 360 });
+  }, [pressKey]);
 
   const style = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }, { rotate: `${rotate.value}deg` }],
@@ -80,6 +85,7 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
   const isDark = themeId === 'dark';
 
   const [pillWidth, setPillWidth] = useState(0);
+  const [pressTicks, setPressTicks] = useState<Record<string, number>>({});
   const slideX = useSharedValue(0);
 
   useEffect(() => {
@@ -146,6 +152,7 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
                   key={route.key}
                   style={styles.tabBtn}
                   onPress={onPress}
+                  onPressIn={() => setPressTicks(ticks => ({ ...ticks, [route.key]: (ticks[route.key] ?? 0) + 1 }))}
                   activeOpacity={0.7}
                   accessibilityLabel={TAB_LABELS[route.name]}
                   accessibilityRole="tab"
@@ -158,6 +165,7 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
                       color={color}
                       focused={focused}
                       isSettings={route.name === 'SettingsTab'}
+                      pressKey={pressTicks[route.key] ?? 0}
                     />
                   </View>
                   <Text style={[styles.tabLabel, { color }]}>
@@ -212,7 +220,7 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     fontSize: 11,
-    fontFamily: FontFamily.medium,
+    fontWeight: '500',
   },
   iconWrap: {
     alignItems: 'center',

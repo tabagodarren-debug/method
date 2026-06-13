@@ -1,8 +1,15 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { Colors } from '../constants/colors';
 
 type Props = {
@@ -10,6 +17,7 @@ type Props = {
   dailySessions: Record<string, number>;
   shieldAvailable?: boolean;
   shieldDaysLeft?: number;
+  animateKey?: number;
 };
 
 function dateKey(daysAgo: number): string {
@@ -18,7 +26,41 @@ function dateKey(daysAgo: number): string {
   return d.toISOString().split('T')[0];
 }
 
-export default function StreakPill({ streak, dailySessions, shieldAvailable, shieldDaysLeft }: Props) {
+function TrailDot({ active, isToday, index, animateKey }: {
+  active: boolean;
+  isToday: boolean;
+  index: number;
+  animateKey?: number;
+}) {
+  const scale = useSharedValue(0.55);
+  const opacity = useSharedValue(0);
+
+  useEffect(() => {
+    const delay = 80 + index * 55;
+    scale.value = 0.55;
+    opacity.value = 0;
+    opacity.value = withDelay(delay, withTiming(1, { duration: 180 }));
+    scale.value = withDelay(delay, withSpring(1, { damping: 13, stiffness: 260 }));
+  }, [active, animateKey, index]);
+
+  const style = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <Animated.View
+      style={[
+        styles.dot,
+        active ? styles.dotActive : styles.dotInactive,
+        isToday && active && styles.dotToday,
+        style,
+      ]}
+    />
+  );
+}
+
+export default function StreakPill({ streak, dailySessions, shieldAvailable, shieldDaysLeft, animateKey }: Props) {
   const days = Array.from({ length: 7 }, (_, i) => ({
     active: (dailySessions[dateKey(6 - i)] ?? 0) > 0,
     isToday: i === 6,
@@ -70,13 +112,12 @@ export default function StreakPill({ streak, dailySessions, shieldAvailable, shi
         )}
         <View style={styles.dots}>
           {days.map(({ active, isToday }, i) => (
-            <View
+            <TrailDot
               key={i}
-              style={[
-                styles.dot,
-                active ? styles.dotActive : styles.dotInactive,
-                isToday && active && styles.dotToday,
-              ]}
+              active={active}
+              isToday={isToday}
+              index={i}
+              animateKey={animateKey}
             />
           ))}
         </View>

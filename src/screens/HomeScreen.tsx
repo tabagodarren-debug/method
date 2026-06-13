@@ -1,5 +1,5 @@
-import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, StyleProp, TextStyle } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -43,6 +43,45 @@ function yesterdayKey(): string {
   return d.toISOString().split('T')[0];
 }
 
+function CountUpText({
+  value,
+  style,
+  formatter = (n) => n.toLocaleString(),
+}: {
+  value: number;
+  style: StyleProp<TextStyle>;
+  formatter?: (n: number) => string;
+}) {
+  const [display, setDisplay] = useState(value);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    if (value === 0) {
+      setDisplay(0);
+      return;
+    }
+
+    const duration = 650;
+    const startTime = Date.now();
+    setDisplay(0);
+
+    const tick = () => {
+      const progress = Math.min((Date.now() - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplay(Math.round(value * eased));
+      if (progress < 1) rafRef.current = requestAnimationFrame(tick);
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [value]);
+
+  return <Text style={style}>{formatter(display)}</Text>;
+}
+
 function StatPill({ label, sessions, earned, lost }: { label: string; sessions: number; earned: number; lost: number }) {
   return (
     <View style={styles.statPill}>
@@ -54,12 +93,28 @@ function StatPill({ label, sessions, earned, lost }: { label: string; sessions: 
         end={{ x: 0.5, y: 1 }}
       />
       <Text style={styles.statPillLabel}>{label}</Text>
-      <Text style={styles.statPillSessions}>
-        {sessions > 0 ? sessions : '—'}
+      <View style={styles.statPillSessionRow}>
+        {sessions > 0 ? (
+          <CountUpText value={sessions} style={styles.statPillSessions} />
+        ) : (
+          <Text style={styles.statPillSessions}>-</Text>
+        )}
         {sessions > 0 ? <Text style={styles.statPillUnit}> {sessions === 1 ? 'session' : 'sessions'}</Text> : null}
-      </Text>
-      {earned > 0 && <Text style={[styles.statPillMerit, { color: '#52C97A' }]}>+{earned} MERIT$</Text>}
-      {lost > 0 && <Text style={[styles.statPillMerit, { color: '#FF6B6B' }]}>-{lost} MERIT$</Text>}
+      </View>
+      {earned > 0 && (
+        <CountUpText
+          value={earned}
+          style={[styles.statPillMerit, { color: '#52C97A' }]}
+          formatter={(n) => `+${n} MERIT$`}
+        />
+      )}
+      {lost > 0 && (
+        <CountUpText
+          value={lost}
+          style={[styles.statPillMerit, { color: '#FF6B6B' }]}
+          formatter={(n) => `-${n} MERIT$`}
+        />
+      )}
     </View>
   );
 }
@@ -193,6 +248,7 @@ export default function HomeScreen() {
             dailySessions={dailySessions}
             shieldAvailable={isUnlocked ? (shield?.available ?? false) : undefined}
             shieldDaysLeft={isUnlocked && shield ? shieldDaysUntilRefill(shield) : undefined}
+            animateKey={animateKey}
           />
         </Animated.View>
 
@@ -385,6 +441,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.pureWhite,
     letterSpacing: -0.5,
+  },
+  statPillSessionRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
   },
   statPillUnit: {
     fontSize: 12,

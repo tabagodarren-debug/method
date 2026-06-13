@@ -50,23 +50,34 @@ function GlassCard({ children, style }: { children: React.ReactNode; style?: obj
   );
 }
 
-function StatRow({ label, value, isLast = false }: { label: string; value: string; isLast?: boolean }) {
+function StatRow({ label, value, delay = 0, isLast = false }: {
+  label: string;
+  value: string;
+  delay?: number;
+  isLast?: boolean;
+}) {
   return (
-    <View style={[styles.statRow, !isLast && styles.statRowBorder]}>
+    <Animated.View
+      entering={FadeInDown.delay(delay).duration(360)}
+      style={[styles.statRow, !isLast && styles.statRowBorder]}
+    >
       <Text style={styles.statLabel}>{label}</Text>
       <Text style={styles.statValue}>{value}</Text>
-    </View>
+    </Animated.View>
   );
 }
 
-function LockedRow({ label, isLast = false }: { label: string; isLast?: boolean }) {
+function LockedRow({ label, delay = 0, isLast = false }: { label: string; delay?: number; isLast?: boolean }) {
   return (
-    <View style={[styles.statRow, !isLast && styles.statRowBorder]}>
+    <Animated.View
+      entering={FadeInDown.delay(delay).duration(360)}
+      style={[styles.statRow, !isLast && styles.statRowBorder]}
+    >
       <Text style={styles.lockedLabel}>{label}</Text>
       <View style={styles.proBadge}>
         <Text style={styles.proBadgeText}>PRO</Text>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -192,13 +203,13 @@ export default function StatsScreen() {
         <Animated.View entering={FadeInDown.delay(160).duration(500)}>
           <GlassCard>
             <View style={styles.statCardInner}>
-              <StatRow label="Sessions" value={String(completed)} />
-              <StatRow label="Streak"   value={`${stats?.currentStreak ?? 0} days`} />
+              <StatRow key={`sessions-${animateKey}`} label="Sessions" value={String(completed)} delay={220} />
+              <StatRow key={`streak-${animateKey}`} label="Streak" value={`${stats?.currentStreak ?? 0} days`} delay={280} />
               {isUnlocked ? (
                 <>
-                  <StatRow label="Discipline"  value={disciplineLabel} />
-                  <StatRow label="Best Streak" value={`${stats?.longestStreak ?? 0} days`} />
-                  <StatRow label="Total Hours" value={`${totalHours} h`} isLast />
+                  <StatRow key={`discipline-${animateKey}`} label="Discipline" value={disciplineLabel} delay={340} />
+                  <StatRow key={`best-${animateKey}`} label="Best Streak" value={`${stats?.longestStreak ?? 0} days`} delay={400} />
+                  <StatRow key={`hours-${animateKey}`} label="Total Hours" value={`${totalHours} h`} delay={460} isLast />
                 </>
               ) : (
                 <TouchableOpacity
@@ -207,9 +218,9 @@ export default function StatsScreen() {
                   activeOpacity={0.85}
                 >
                   <View style={styles.lockedDivider} />
-                  <LockedRow label="Discipline" />
-                  <LockedRow label="Best Streak" />
-                  <LockedRow label="Total Hours" isLast />
+                  <LockedRow key={`locked-discipline-${animateKey}`} label="Discipline" delay={340} />
+                  <LockedRow key={`locked-best-${animateKey}`} label="Best Streak" delay={400} />
+                  <LockedRow key={`locked-hours-${animateKey}`} label="Total Hours" delay={460} isLast />
                   <View style={styles.upgradeHint}>
                     <Text style={styles.upgradeHintText}>Unlock with Method Pro</Text>
                     <Ionicons name="arrow-forward" size={11} color="rgba(255,255,255,0.28)" />

@@ -27,6 +27,32 @@ type Props = {
   onShowPaywall?: () => void;
 };
 
+function PresetTile({ mins, active, onSelect }: { mins: number; active: boolean; onSelect: () => void }) {
+  const scale = useSharedValue(1);
+  const pressStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <Animated.View style={[styles.tileWrap, pressStyle]}>
+      <TouchableOpacity
+        onPress={onSelect}
+        onPressIn={() => { scale.value = withSpring(0.96, { damping: 18, stiffness: 420 }); }}
+        onPressOut={() => { scale.value = withSpring(1, { damping: 16, stiffness: 360 }); }}
+        activeOpacity={1}
+        style={[styles.tile, active && styles.tileActive]}
+      >
+        <Text style={[styles.tileNum, active && styles.tileNumActive]}>{mins}</Text>
+        <Text style={[styles.tileUnit, active && styles.tileUnitActive]}>min</Text>
+        <View style={styles.tileDivider} />
+        <Text style={[styles.tileMerit, active && styles.tileMeritActive]}>
+          {meritRangeLabel(mins)}
+        </Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
 export default function SessionPickerModal({
   visible,
   initialInterval,
@@ -107,19 +133,12 @@ export default function SessionPickerModal({
             {FREE_PRESETS.map(mins => {
               const active = selected === mins;
               return (
-                <TouchableOpacity
+                <PresetTile
                   key={mins}
-                  onPress={() => { SoundHaptics.tap(); setSelected(mins); }}
-                  activeOpacity={0.8}
-                  style={[styles.tile, active && styles.tileActive]}
-                >
-                  <Text style={[styles.tileNum, active && styles.tileNumActive]}>{mins}</Text>
-                  <Text style={[styles.tileUnit, active && styles.tileUnitActive]}>min</Text>
-                  <View style={styles.tileDivider} />
-                  <Text style={[styles.tileMerit, active && styles.tileMeritActive]}>
-                    {meritRangeLabel(mins)}
-                  </Text>
-                </TouchableOpacity>
+                  mins={mins}
+                  active={active}
+                  onSelect={() => { SoundHaptics.tap(); setSelected(mins); }}
+                />
               );
             })}
           </View>
@@ -240,6 +259,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
     marginBottom: 10,
+  },
+  tileWrap: {
+    flex: 1,
   },
   tile: {
     flex: 1,
