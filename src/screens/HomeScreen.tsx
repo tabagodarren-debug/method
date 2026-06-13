@@ -101,9 +101,6 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.safe}>
       <View style={styles.topBar}>
         <Text style={styles.wordmark}>method.</Text>
-        <TouchableOpacity onPress={() => nav.navigate('Settings')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Ionicons name="settings-outline" size={20} color="rgba(255,255,255,0.35)" />
-        </TouchableOpacity>
       </View>
 
       <View style={styles.center}>
