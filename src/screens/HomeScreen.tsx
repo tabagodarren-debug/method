@@ -8,11 +8,11 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import PillButton from '../components/PillButton';
 import MeritAmount from '../components/MeritAmount';
-import WeekStrip from '../components/WeekStrip';
 import ShareCard from '../components/ShareCard';
 import RankProgressBar from '../components/RankProgressBar';
 import SessionPickerModal from '../components/SessionPickerModal';
 import PaywallModal from '../components/PaywallModal';
+import StreakPill from '../components/StreakPill';
 import { Colors } from '../constants/colors';
 import { Typography } from '../constants/typography';
 import { loadPersona } from '../storage/persona';
@@ -69,6 +69,7 @@ export default function HomeScreen() {
   const [showShare, setShowShare] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [focusKey, setFocusKey] = useState(0);
   const [interval, setIntervalMinutes] = useState(25);
   const [isUnlocked, setIsUnlocked] = useState(false);
 
@@ -78,6 +79,7 @@ export default function HomeScreen() {
       loadStats().then(setStats);
       loadInterval().then(setIntervalMinutes);
       checkAppUnlock().then(setIsUnlocked);
+      setFocusKey(k => k + 1);
     }, [])
   );
 
@@ -136,13 +138,6 @@ export default function HomeScreen() {
             textStyle={styles.counter}
             color={Colors.pureWhite}
           />
-          {stats && stats.currentStreak > 0 && (
-            <Text style={styles.streak}>{streakLabel}</Text>
-          )}
-          <View style={styles.weekStripRow}>
-            <WeekStrip dailySessions={dailySessions} />
-          </View>
-
           <View style={styles.cardDivider} />
 
           <RankProgressBar
@@ -159,6 +154,15 @@ export default function HomeScreen() {
             {countdown.daysRemaining === 1 ? ' day' : ' days'} to your goal
           </Animated.Text>
         )}
+
+        {/* Streak pill */}
+        <Animated.View entering={FadeInDown.delay(260).duration(500)} style={styles.streakRow}>
+          <StreakPill
+            streak={stats?.currentStreak ?? 0}
+            dailySessions={dailySessions}
+            animKey={focusKey}
+          />
+        </Animated.View>
 
         {/* Today + Yesterday stat pills */}
         <Animated.View entering={FadeInDown.delay(320).duration(500)} style={styles.statRow}>
@@ -299,16 +303,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.45)',
   },
   counter: { ...Typography.heroNumber },
-  streak: {
-    ...Typography.metaLabel,
-    color: Colors.dim,
-    marginTop: 6,
-    marginBottom: 14,
-  },
-  weekStripRow: {
-    marginTop: 2,
-    marginBottom: 4,
-  },
   cardDivider: {
     height: 1,
     alignSelf: 'stretch',
@@ -325,6 +319,10 @@ const styles = StyleSheet.create({
   countdownNum: {
     fontWeight: '600',
     color: 'rgba(255,255,255,0.70)',
+  },
+  streakRow: {
+    alignSelf: 'stretch',
+    marginBottom: 10,
   },
   statRow: {
     flexDirection: 'row',
