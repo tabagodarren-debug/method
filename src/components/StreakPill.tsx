@@ -1,18 +1,13 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, {
-  useSharedValue, useAnimatedStyle,
-  withSequence, withSpring, withTiming,
-} from 'react-native-reanimated';
 import { Colors } from '../constants/colors';
 
 type Props = {
   streak: number;
   dailySessions: Record<string, number>;
-  animKey: number;
 };
 
 function dateKey(daysAgo: number): string {
@@ -21,30 +16,7 @@ function dateKey(daysAgo: number): string {
   return d.toISOString().split('T')[0];
 }
 
-export default function StreakPill({ streak, dailySessions, animKey }: Props) {
-  const scale  = useSharedValue(1);
-  const rotate = useSharedValue(0);
-
-  useEffect(() => {
-    scale.value = withSequence(
-      withSpring(1.45, { damping: 3, stiffness: 340 }),
-      withSpring(1,    { damping: 7, stiffness: 220 }),
-    );
-    rotate.value = withSequence(
-      withTiming(-14, { duration: 80 }),
-      withTiming(12,  { duration: 90 }),
-      withTiming(-6,  { duration: 80 }),
-      withTiming(0,   { duration: 70 }),
-    );
-  }, [animKey]);
-
-  const iconStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: scale.value },
-      { rotate: `${rotate.value}deg` },
-    ],
-  }));
-
+export default function StreakPill({ streak, dailySessions }: Props) {
   const days = Array.from({ length: 7 }, (_, i) => ({
     active: (dailySessions[dateKey(6 - i)] ?? 0) > 0,
     isToday: i === 6,
@@ -65,13 +37,11 @@ export default function StreakPill({ streak, dailySessions, animKey }: Props) {
 
       {/* Left: icon + count */}
       <View style={styles.left}>
-        <Animated.View style={iconStyle}>
-          <Ionicons
-            name={hasStreak ? 'flame' : 'flame-outline'}
-            size={26}
-            color={hasStreak ? '#FF8C42' : 'rgba(255,255,255,0.22)'}
-          />
-        </Animated.View>
+        <Ionicons
+          name={hasStreak ? 'flame' : 'flame-outline'}
+          size={26}
+          color={hasStreak ? Colors.pureWhite : 'rgba(255,255,255,0.20)'}
+        />
         <View style={styles.countWrap}>
           <Text style={[styles.count, !hasStreak && styles.countDim]}>
             {streak}

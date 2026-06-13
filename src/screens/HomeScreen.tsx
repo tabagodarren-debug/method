@@ -69,7 +69,6 @@ export default function HomeScreen() {
   const [showShare, setShowShare] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
-  const [focusKey, setFocusKey] = useState(0);
   const [interval, setIntervalMinutes] = useState(25);
   const [isUnlocked, setIsUnlocked] = useState(false);
 
@@ -79,7 +78,6 @@ export default function HomeScreen() {
       loadStats().then(setStats);
       loadInterval().then(setIntervalMinutes);
       checkAppUnlock().then(setIsUnlocked);
-      setFocusKey(k => k + 1);
     }, [])
   );
 
@@ -160,7 +158,6 @@ export default function HomeScreen() {
           <StreakPill
             streak={stats?.currentStreak ?? 0}
             dailySessions={dailySessions}
-            animKey={focusKey}
           />
         </Animated.View>
 
