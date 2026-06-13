@@ -12,6 +12,7 @@ import WeekStrip from '../components/WeekStrip';
 import ShareCard from '../components/ShareCard';
 import RankProgressBar from '../components/RankProgressBar';
 import SessionPickerModal from '../components/SessionPickerModal';
+import PaywallModal from '../components/PaywallModal';
 import { Colors } from '../constants/colors';
 import { Typography } from '../constants/typography';
 import { loadPersona } from '../storage/persona';
@@ -67,6 +68,7 @@ export default function HomeScreen() {
   const [stats, setStats] = useState<SessionStats | null>(null);
   const [showShare, setShowShare] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
   const [interval, setIntervalMinutes] = useState(25);
   const [isUnlocked, setIsUnlocked] = useState(false);
 
@@ -101,6 +103,11 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.safe}>
       <View style={styles.topBar}>
         <Text style={styles.wordmark}>method.</Text>
+        {!isUnlocked && (
+          <TouchableOpacity style={styles.upgradeChip} onPress={() => setShowPaywall(true)} activeOpacity={0.8}>
+            <Text style={styles.upgradeChipText}>Upgrade</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.center}>
@@ -197,6 +204,12 @@ export default function HomeScreen() {
           nav.navigate('FocusSession');
         }}
       />
+
+      <PaywallModal
+        visible={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        onUnlocked={() => setIsUnlocked(true)}
+      />
     </SafeAreaView>
   );
 }
@@ -216,6 +229,20 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: Colors.pureWhite,
     letterSpacing: -0.8,
+  },
+  upgradeChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 100,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(255,255,255,0.07)',
+  },
+  upgradeChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.70)',
+    letterSpacing: 0.2,
   },
   center: {
     flex: 1,
