@@ -228,6 +228,7 @@ export default function HomeScreen() {
         initialInterval={interval}
         isUnlocked={isUnlocked}
         onClose={() => setShowPicker(false)}
+        onShowPaywall={() => { setShowPicker(false); setShowPaywall(true); }}
         onConfirm={async (minutes) => {
           setShowPicker(false);
           await saveInterval(minutes);

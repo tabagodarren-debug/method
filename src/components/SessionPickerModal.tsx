@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -23,6 +23,7 @@ type Props = {
   isUnlocked: boolean;
   onConfirm: (minutes: number) => void;
   onClose: () => void;
+  onShowPaywall?: () => void;
 };
 
 export default function SessionPickerModal({
@@ -31,6 +32,7 @@ export default function SessionPickerModal({
   isUnlocked,
   onConfirm,
   onClose,
+  onShowPaywall,
 }: Props) {
   const translateY = useSharedValue(SHEET_OFFSET);
   const [selected, setSelected] = useState(initialInterval);
@@ -161,13 +163,10 @@ export default function SessionPickerModal({
           ) : (
             <TouchableOpacity
               style={styles.customLocked}
-              onPress={() => Alert.alert('Method Pro', 'Unlock custom focus intervals and more with Method Pro.')}
+              onPress={() => { dismiss(onShowPaywall); }}
               activeOpacity={0.7}
             >
-              <View style={styles.customLockedLeft}>
-                <Ionicons name="lock-closed" size={13} color={Colors.ghost} />
-                <Text style={styles.customLockedLabel}>Custom interval</Text>
-              </View>
+              <Text style={styles.customLockedLabel}>Custom interval</Text>
               <View style={styles.proBadge}>
                 <Text style={styles.proBadgeText}>PRO</Text>
               </View>
