@@ -2,7 +2,9 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Colors } from '../constants/colors';
 import { Typography } from '../constants/typography';
 import { loadStats } from '../storage/stats';
@@ -13,8 +15,8 @@ import RankProgressBar from '../components/RankProgressBar';
 import PaywallModal from '../components/PaywallModal';
 import type { SessionStats } from '../types';
 
-const BAR_MAX_HEIGHT = 96;
-const BAR_WIDTH = 30;
+const BAR_MAX_HEIGHT = 88;
+const BAR_WIDTH = 28;
 const WEEKDAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 type DayBar = { letter: string; sessions: number; isToday: boolean };
@@ -31,6 +33,22 @@ function buildWeek(dailySessions: Record<string, number>): DayBar[] {
       isToday: daysAgo === 0,
     };
   });
+}
+
+function GlassCard({ children, style }: { children: React.ReactNode; style?: object }) {
+  return (
+    <View style={[styles.card, style]}>
+      <BlurView intensity={32} tint="dark" style={StyleSheet.absoluteFill} />
+      <LinearGradient
+        colors={['rgba(255,255,255,0.13)', 'rgba(255,255,255,0.04)']}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+      />
+      <View style={styles.cardShine} />
+      {children}
+    </View>
+  );
 }
 
 function StatRow({ label, value, isLast = false }: { label: string; value: string; isLast?: boolean }) {
@@ -82,116 +100,108 @@ export default function StatsScreen() {
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-        {/* Total earned */}
-        <Text style={styles.earnedLabel}>TOTAL EARNED</Text>
-        <MeritAmount
-          amount={stats?.totalEarned ?? 0}
-          symbolSize={36}
-          textStyle={styles.earnedValue}
-          color={Colors.primaryText}
-          style={styles.earnedValueRow}
-        />
+        {/* Overview card — merit + rank + progress */}
+        <Animated.View entering={FadeInDown.duration(500)}>
+          <GlassCard>
+            <View style={styles.overviewTop}>
+              <View style={styles.overviewLeft}>
+                <Text style={styles.overviewKicker}>TOTAL EARNED</Text>
+                <MeritAmount
+                  amount={stats?.totalEarned ?? 0}
+                  symbolSize={40}
+                  textStyle={styles.overviewMerit}
+                  color={Colors.pureWhite}
+                />
+              </View>
+              <View style={styles.overviewRight}>
+                <Text style={styles.overviewKicker}>
+                  RANK {progress.current.level.toString().padStart(2, '0')}
+                </Text>
+                <Text style={styles.overviewRank}>
+                  {progress.current.title.toUpperCase()}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.cardDivider} />
+            <RankProgressBar
+              percent={progress.percent}
+              leftLabel={progress.isMax ? 'Max rank reached' : progress.current.title}
+              rightLabel={
+                progress.isMax
+                  ? 'THE LEGACY'
+                  : `${progress.meritToNext} MERIT$ TO RANK`
+              }
+            />
+          </GlassCard>
+        </Animated.View>
 
         {/* 7-day chart — free */}
-        <View style={styles.card}>
-          <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFill} />
-          <View style={styles.cardOverlay} />
-          <View style={styles.cardInner}>
-            <Text style={styles.chartLabel}>LAST 7 DAYS</Text>
-            <View style={styles.chartRow}>
-              {week.map((day, i) => (
-                <View key={i} style={styles.barCol}>
-                  <View style={styles.barTrack}>
-                    {day.sessions > 0 && (
-                      <View
-                        style={[
-                          styles.bar,
-                          {
-                            height: Math.max(6, BAR_MAX_HEIGHT * (day.sessions / weekMax)),
-                            opacity: day.isToday ? 0.98 : 0.55,
-                          },
-                        ]}
-                      />
-                    )}
+        <Animated.View entering={FadeInDown.delay(80).duration(500)}>
+          <GlassCard>
+            <View style={styles.cardInner}>
+              <Text style={styles.chartLabel}>LAST 7 DAYS</Text>
+              <View style={styles.chartRow}>
+                {week.map((day, i) => (
+                  <View key={i} style={styles.barCol}>
+                    <View style={styles.barTrack}>
+                      {day.sessions > 0 && (
+                        <View
+                          style={[
+                            styles.bar,
+                            {
+                              height: Math.max(6, BAR_MAX_HEIGHT * (day.sessions / weekMax)),
+                              opacity: day.isToday ? 1 : 0.45,
+                            },
+                          ]}
+                        />
+                      )}
+                    </View>
+                    <Text style={[styles.dayLabel, day.isToday && styles.dayLabelToday]}>
+                      {day.letter}
+                    </Text>
                   </View>
-                  <Text style={[styles.dayLabel, day.isToday && styles.dayLabelToday]}>
-                    {day.letter}
-                  </Text>
-                </View>
-              ))}
+                ))}
+              </View>
             </View>
-          </View>
-        </View>
-
-        {/* Rank card */}
-        <View style={styles.card}>
-          <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFill} />
-          <View style={styles.cardOverlay} />
-          <View style={styles.cardInner}>
-            <View style={styles.rankHeader}>
-              <Text style={styles.rankKicker}>
-                RANK {progress.current.level.toString().padStart(2, '0')}
-              </Text>
-              <Text style={styles.rankTitle}>{progress.current.title.toUpperCase()}</Text>
-            </View>
-            {isUnlocked ? (
-              <RankProgressBar
-                percent={progress.percent}
-                leftLabel={progress.isMax ? 'Max rank reached' : progress.current.title}
-                rightLabel={
-                  progress.isMax ? 'THE LEGACY' : `${progress.meritToNext} to ${progress.next!.title}`
-                }
-              />
-            ) : (
-              <TouchableOpacity
-                style={styles.rankLock}
-                onPress={() => setShowPaywall(true)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.rankLockText}>Rank progress</Text>
-                <View style={styles.proBadge}>
-                  <Text style={styles.proBadgeText}>PRO</Text>
-                </View>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
+          </GlassCard>
+        </Animated.View>
 
         {/* Stat rows */}
-        <View style={[styles.card, styles.statCard]}>
-          <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFill} />
-          <View style={styles.cardOverlay} />
-          <View style={styles.statCardInner}>
+        <Animated.View entering={FadeInDown.delay(160).duration(500)}>
+          <GlassCard>
+            <View style={styles.statCardInner}>
 
-            {/* Free rows */}
-            <StatRow label="Sessions" value={String(completed)} />
-            <StatRow label="Streak" value={`${stats?.currentStreak ?? 0} days`} />
+              {/* Free rows */}
+              <StatRow label="Sessions" value={String(completed)} />
+              <StatRow label="Streak"   value={`${stats?.currentStreak ?? 0} days`} />
 
-            {/* Pro rows */}
-            {isUnlocked ? (
-              <>
-                <StatRow label="Discipline"  value={disciplineLabel} />
-                <StatRow label="Best Streak" value={`${stats?.longestStreak ?? 0} days`} />
-                <StatRow label="Total Hours" value={`${totalHours} h`} isLast />
-              </>
-            ) : (
-              <TouchableOpacity
-                style={styles.lockedSection}
-                onPress={() => setShowPaywall(true)}
-                activeOpacity={0.85}
-              >
-                <View style={styles.lockedDivider} />
-                <LockedRow label="Discipline" />
-                <LockedRow label="Best Streak" />
-                <LockedRow label="Total Hours" isLast />
-                <View style={styles.upgradeHint}>
-                  <Text style={styles.upgradeHintText}>Unlock with Method Pro</Text>
-                  <Ionicons name="arrow-forward" size={11} color="rgba(255,255,255,0.28)" />
-                </View>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
+              {/* Pro rows */}
+              {isUnlocked ? (
+                <>
+                  <StatRow label="Discipline"  value={disciplineLabel} />
+                  <StatRow label="Best Streak" value={`${stats?.longestStreak ?? 0} days`} />
+                  <StatRow label="Total Hours" value={`${totalHours} h`} isLast />
+                </>
+              ) : (
+                <TouchableOpacity
+                  style={styles.lockedSection}
+                  onPress={() => setShowPaywall(true)}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.lockedDivider} />
+                  <LockedRow label="Discipline" />
+                  <LockedRow label="Best Streak" />
+                  <LockedRow label="Total Hours" isLast />
+                  <View style={styles.upgradeHint}>
+                    <Text style={styles.upgradeHintText}>Unlock with Method Pro</Text>
+                    <Ionicons name="arrow-forward" size={11} color="rgba(255,255,255,0.28)" />
+                  </View>
+                </TouchableOpacity>
+              )}
+
+            </View>
+          </GlassCard>
+        </Animated.View>
 
       </ScrollView>
 
@@ -206,95 +216,108 @@ export default function StatsScreen() {
 
 const styles = StyleSheet.create({
   safe:   { flex: 1, backgroundColor: Colors.background },
-  scroll: { paddingTop: 88, paddingHorizontal: 24, paddingBottom: 100 },
-
-  earnedLabel:    { ...Typography.personaLabel, color: Colors.pureWhite, marginBottom: 9 },
-  earnedValueRow: { marginBottom: 28 },
-  earnedValue:    { ...Typography.sectionHeadline },
+  scroll: { paddingTop: 88, paddingHorizontal: 24, paddingBottom: 100, gap: 12 },
 
   card: {
-    borderRadius: 20,
+    borderRadius: 28,
     overflow: 'hidden',
-    borderWidth: 0.5,
-    borderColor: Colors.glassBorder,
-    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
   },
-  cardOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: Colors.glassBg },
-  cardInner:   { padding: 20 },
+  cardShine: {
+    position: 'absolute',
+    top: 0,
+    left: 24,
+    right: 24,
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.40)',
+  },
+  cardDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    marginHorizontal: 24,
+    marginBottom: 18,
+  },
 
-  chartLabel: { ...Typography.chartLabel, color: Colors.dim, marginBottom: 20 },
+  // Overview card
+  overviewTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingHorizontal: 24,
+    paddingTop: 22,
+    paddingBottom: 20,
+  },
+  overviewLeft:   { gap: 6 },
+  overviewRight:  { alignItems: 'flex-end', gap: 6 },
+  overviewKicker: {
+    fontSize: 10,
+    fontWeight: '500',
+    letterSpacing: 2,
+    color: 'rgba(255,255,255,0.35)',
+  },
+  overviewMerit: {
+    fontSize: 38,
+    fontWeight: '800',
+    letterSpacing: -1.5,
+    color: Colors.pureWhite,
+  },
+  overviewRank: {
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+    color: Colors.pureWhite,
+    textAlign: 'right',
+  },
+
+  // Chart card
+  cardInner: { padding: 22 },
+  chartLabel: {
+    fontSize: 10,
+    fontWeight: '500',
+    letterSpacing: 2,
+    color: 'rgba(255,255,255,0.35)',
+    marginBottom: 20,
+  },
   chartRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
     height: BAR_MAX_HEIGHT + 20,
   },
-  barCol:   { alignItems: 'center', gap: 6 },
+  barCol: { alignItems: 'center', gap: 8 },
   barTrack: {
     width: BAR_WIDTH,
     height: BAR_MAX_HEIGHT,
-    backgroundColor: Colors.chartTrack,
-    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 8,
     justifyContent: 'flex-end',
+    overflow: 'hidden',
   },
   bar: {
     width: BAR_WIDTH,
-    backgroundColor: Colors.primaryText,
-    borderRadius: 6,
+    backgroundColor: Colors.pureWhite,
+    borderRadius: 8,
   },
-  dayLabel:      { ...Typography.dayLabel, color: Colors.dim },
+  dayLabel:      { fontSize: 10, fontWeight: '500', color: 'rgba(255,255,255,0.30)', letterSpacing: 0.3 },
   dayLabelToday: { color: Colors.pureWhite, fontWeight: '700' },
 
-  rankHeader: { marginBottom: 18 },
-  rankKicker: {
-    fontSize: 10,
-    fontWeight: '500',
-    letterSpacing: 2.5,
-    color: Colors.dim,
-    marginBottom: 6,
-  },
-  rankTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-    color: Colors.pureWhite,
-  },
-  rankLock: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    borderWidth: 0.5,
-    borderColor: 'rgba(255,255,255,0.07)',
-    backgroundColor: 'rgba(255,255,255,0.03)',
-  },
-  rankLockText: {
-    fontSize: 13,
-    fontWeight: '400',
-    color: 'rgba(255,255,255,0.28)',
-  },
-
-  statCard:      {},
-  statCardInner: { paddingHorizontal: 20 },
+  // Stat rows
+  statCardInner: { paddingHorizontal: 22 },
   statRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 15,
+    paddingVertical: 16,
   },
-  statRowBorder:  { borderBottomWidth: 0.5, borderBottomColor: Colors.statSeparator },
-  statLabel:      { ...Typography.statRowLabel, color: Colors.dim },
-  statValue:      { ...Typography.statRowValue, color: Colors.primaryText },
+  statRowBorder:  { borderBottomWidth: 0.5, borderBottomColor: 'rgba(255,255,255,0.08)' },
+  statLabel:      { fontSize: 14, fontWeight: '400', color: 'rgba(255,255,255,0.55)' },
+  statValue:      { fontSize: 14, fontWeight: '600', color: Colors.pureWhite },
 
-  lockedSection: { gap: 0 },
-  lockedDivider: {
-    height: 0.5,
-    backgroundColor: Colors.statSeparator,
-    marginBottom: 0,
-  },
-  lockedLabel: { ...Typography.statRowLabel, color: 'rgba(255,255,255,0.20)' },
+  // Locked section
+  lockedSection:  { gap: 0 },
+  lockedDivider:  { height: 0.5, backgroundColor: 'rgba(255,255,255,0.08)' },
+  lockedLabel:    { fontSize: 14, fontWeight: '400', color: 'rgba(255,255,255,0.20)' },
   proBadge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -315,7 +338,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 5,
     paddingTop: 14,
-    paddingBottom: 4,
+    paddingBottom: 6,
   },
   upgradeHintText: {
     fontSize: 11,
