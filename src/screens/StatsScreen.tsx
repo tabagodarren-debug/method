@@ -88,6 +88,15 @@ export default function StatsScreen() {
   const totalHours = stats ? (stats.totalMinutes / 60).toFixed(1) : '0.0';
   const week = buildWeek(stats?.dailySessions ?? {});
   const weekMax = Math.max(1, ...week.map(d => d.sessions));
+
+  const dailySessions = stats?.dailySessions ?? {};
+  const thisWeekTotal = week.reduce((sum, d) => sum + d.sessions, 0);
+  const prevWeekTotal = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (13 - i));
+    return dailySessions[d.toISOString().split('T')[0]] ?? 0;
+  }).reduce((sum, n) => sum + n, 0);
+  const weekDelta = thisWeekTotal - prevWeekTotal;
   const progress = getRankProgress(stats?.totalEarned ?? 0);
   const completed = stats?.sessionsCompleted ?? 0;
   const abandoned = stats?.sessionsAbandoned ?? 0;
@@ -141,7 +150,14 @@ export default function StatsScreen() {
         <Animated.View entering={FadeInDown.delay(80).duration(500)}>
           <GlassCard>
             <View style={styles.cardInner}>
-              <Text style={styles.chartLabel}>LAST 7 DAYS</Text>
+              <View style={styles.chartHeader}>
+                <Text style={styles.chartLabel}>LAST 7 DAYS</Text>
+                {prevWeekTotal > 0 || thisWeekTotal > 0 ? (
+                  <Text style={[styles.weekDelta, weekDelta >= 0 ? styles.weekDeltaUp : styles.weekDeltaDown]}>
+                    {weekDelta > 0 ? `↑ ${weekDelta}` : weekDelta < 0 ? `↓ ${Math.abs(weekDelta)}` : '—'} vs last week
+                  </Text>
+                ) : null}
+              </View>
               <View style={styles.chartRow}>
                 {week.map((day, i) => (
                   <View key={i} style={styles.barCol}>
@@ -275,13 +291,25 @@ const styles = StyleSheet.create({
 
   // Chart card
   cardInner: { padding: 22 },
+  chartHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
   chartLabel: {
     fontSize: 10,
     fontWeight: '500',
     letterSpacing: 2,
     color: 'rgba(255,255,255,0.35)',
-    marginBottom: 20,
   },
+  weekDelta: {
+    fontSize: 11,
+    fontWeight: '500',
+    letterSpacing: 0.2,
+  },
+  weekDeltaUp:   { color: 'rgba(255,255,255,0.65)' },
+  weekDeltaDown: { color: 'rgba(255,255,255,0.28)' },
   chartRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
