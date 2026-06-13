@@ -1,12 +1,11 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Colors } from '../constants/colors';
-import { Typography } from '../constants/typography';
 import { loadStats } from '../storage/stats';
 import { getRankProgress } from '../utils/ranks';
 import { checkAppUnlock } from '../services/purchases';
@@ -15,7 +14,7 @@ import RankProgressBar from '../components/RankProgressBar';
 import PaywallModal from '../components/PaywallModal';
 import type { SessionStats } from '../types';
 
-const BAR_MAX_HEIGHT = 88;
+const BAR_MAX_HEIGHT = 72;
 const BAR_WIDTH = 28;
 const WEEKDAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
@@ -75,12 +74,14 @@ export default function StatsScreen() {
   const [stats, setStats] = useState<SessionStats | null>(null);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [animateKey, setAnimateKey] = useState(0);
 
   useFocusEffect(
     useCallback(() => {
       Promise.all([loadStats(), checkAppUnlock()]).then(([s, unlocked]) => {
         setStats(s);
         setIsUnlocked(unlocked);
+        setAnimateKey(k => k + 1);
       });
     }, [])
   );
@@ -97,6 +98,7 @@ export default function StatsScreen() {
     return dailySessions[d.toISOString().split('T')[0]] ?? 0;
   }).reduce((sum, n) => sum + n, 0);
   const weekDelta = thisWeekTotal - prevWeekTotal;
+
   const progress = getRankProgress(stats?.totalEarned ?? 0);
   const completed = stats?.sessionsCompleted ?? 0;
   const abandoned = stats?.sessionsAbandoned ?? 0;
@@ -107,7 +109,7 @@ export default function StatsScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <View style={styles.container}>
 
         {/* Overview card — merit + rank + progress */}
         <Animated.View entering={FadeInDown.duration(500)}>
@@ -117,7 +119,8 @@ export default function StatsScreen() {
                 <Text style={styles.overviewKicker}>TOTAL EARNED</Text>
                 <MeritAmount
                   amount={stats?.totalEarned ?? 0}
-                  symbolSize={40}
+                  animateKey={animateKey}
+                  symbolSize={36}
                   textStyle={styles.overviewMerit}
                   color={Colors.pureWhite}
                 />
@@ -188,12 +191,8 @@ export default function StatsScreen() {
         <Animated.View entering={FadeInDown.delay(160).duration(500)}>
           <GlassCard>
             <View style={styles.statCardInner}>
-
-              {/* Free rows */}
               <StatRow label="Sessions" value={String(completed)} />
               <StatRow label="Streak"   value={`${stats?.currentStreak ?? 0} days`} />
-
-              {/* Pro rows */}
               {isUnlocked ? (
                 <>
                   <StatRow label="Discipline"  value={disciplineLabel} />
@@ -216,12 +215,11 @@ export default function StatsScreen() {
                   </View>
                 </TouchableOpacity>
               )}
-
             </View>
           </GlassCard>
         </Animated.View>
 
-      </ScrollView>
+      </View>
 
       <PaywallModal
         visible={showPaywall}
@@ -233,8 +231,8 @@ export default function StatsScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe:   { flex: 1, backgroundColor: Colors.background },
-  scroll: { paddingTop: 88, paddingHorizontal: 24, paddingBottom: 100, gap: 12 },
+  safe:      { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1, paddingHorizontal: 24, paddingTop: 20, paddingBottom: 20, gap: 12 },
 
   card: {
     borderRadius: 28,
@@ -254,21 +252,20 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: 'rgba(255,255,255,0.08)',
     marginHorizontal: 24,
-    marginBottom: 18,
+    marginBottom: 16,
   },
 
-  // Overview card
   overviewTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     paddingHorizontal: 24,
-    paddingTop: 22,
-    paddingBottom: 20,
+    paddingTop: 20,
+    paddingBottom: 16,
   },
-  overviewProgress: { paddingHorizontal: 24, paddingBottom: 22 },
-  overviewLeft:   { gap: 6 },
-  overviewRight:  { alignItems: 'flex-end', gap: 6 },
+  overviewProgress: { paddingHorizontal: 24, paddingBottom: 20 },
+  overviewLeft:     { gap: 6 },
+  overviewRight:    { alignItems: 'flex-end', gap: 6 },
   overviewKicker: {
     fontSize: 10,
     fontWeight: '500',
@@ -276,26 +273,24 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.35)',
   },
   overviewMerit: {
-    fontSize: 38,
+    fontSize: 34,
     fontWeight: '800',
     letterSpacing: -1.5,
-    color: Colors.pureWhite,
   },
   overviewRank: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800',
     letterSpacing: -0.4,
     color: Colors.pureWhite,
     textAlign: 'right',
   },
 
-  // Chart card
-  cardInner: { padding: 22 },
+  cardInner: { padding: 20 },
   chartHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   chartLabel: {
     fontSize: 10,
@@ -303,11 +298,7 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     color: 'rgba(255,255,255,0.35)',
   },
-  weekDelta: {
-    fontSize: 11,
-    fontWeight: '500',
-    letterSpacing: 0.2,
-  },
+  weekDelta:     { fontSize: 11, fontWeight: '500', letterSpacing: 0.2 },
   weekDeltaUp:   { color: 'rgba(255,255,255,0.65)' },
   weekDeltaDown: { color: 'rgba(255,255,255,0.28)' },
   chartRow: {
@@ -325,27 +316,21 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     overflow: 'hidden',
   },
-  bar: {
-    width: BAR_WIDTH,
-    backgroundColor: Colors.pureWhite,
-    borderRadius: 8,
-  },
+  bar:           { width: BAR_WIDTH, backgroundColor: Colors.pureWhite, borderRadius: 8 },
   dayLabel:      { fontSize: 10, fontWeight: '500', color: 'rgba(255,255,255,0.30)', letterSpacing: 0.3 },
   dayLabelToday: { color: Colors.pureWhite, fontWeight: '700' },
 
-  // Stat rows
-  statCardInner: { paddingHorizontal: 22 },
+  statCardInner:  { paddingHorizontal: 22 },
   statRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 13,
   },
   statRowBorder:  { borderBottomWidth: 0.5, borderBottomColor: 'rgba(255,255,255,0.08)' },
   statLabel:      { fontSize: 14, fontWeight: '400', color: 'rgba(255,255,255,0.55)' },
   statValue:      { fontSize: 14, fontWeight: '600', color: Colors.pureWhite },
 
-  // Locked section
   lockedSection:  { gap: 0 },
   lockedDivider:  { height: 0.5, backgroundColor: 'rgba(255,255,255,0.08)' },
   lockedLabel:    { fontSize: 14, fontWeight: '400', color: 'rgba(255,255,255,0.20)' },
@@ -368,8 +353,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 5,
-    paddingTop: 14,
-    paddingBottom: 6,
+    paddingTop: 12,
+    paddingBottom: 4,
   },
   upgradeHintText: {
     fontSize: 11,
