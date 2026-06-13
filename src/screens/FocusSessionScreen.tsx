@@ -48,6 +48,11 @@ const SLIDES: ImageSourcePropType[] = [
   require('../../assets/slideshow/16.png'),
   require('../../assets/slideshow/18.png'),
   require('../../assets/slideshow/20.png'),
+  require('../../assets/slideshow/21.png'),
+  require('../../assets/slideshow/22.png'),
+  require('../../assets/slideshow/23.png'),
+  require('../../assets/slideshow/24.png'),
+  require('../../assets/slideshow/25.png'),
 ];
 
 function formatTime(seconds: number): string {
