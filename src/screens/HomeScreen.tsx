@@ -5,7 +5,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, {
+  Easing,
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import PillButton from '../components/PillButton';
 import MeritAmount from '../components/MeritAmount';
 import ShareCard from '../components/ShareCard';
@@ -130,6 +139,22 @@ export default function HomeScreen() {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [shield, setShield] = useState<ShieldState | null>(null);
   const [animateKey, setAnimateKey] = useState(0);
+  const meritSweepX = useSharedValue(-180);
+
+  useEffect(() => {
+    meritSweepX.value = withRepeat(
+      withSequence(
+        withTiming(390, { duration: 1150, easing: Easing.inOut(Easing.quad) }),
+        withDelay(6850, withTiming(-180, { duration: 0 }))
+      ),
+      -1,
+      false
+    );
+  }, [meritSweepX]);
+
+  const meritSweepStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: meritSweepX.value }, { rotate: '-18deg' }],
+  }));
 
   useFocusEffect(
     useCallback(() => {
@@ -216,6 +241,14 @@ export default function HomeScreen() {
             end={{ x: 0.5, y: 1 }}
           />
           <View style={styles.meritShine} />
+          <Animated.View pointerEvents="none" style={[styles.meritSweep, meritSweepStyle]}>
+            <LinearGradient
+              colors={['transparent', 'rgba(255,255,255,0.13)', 'transparent']}
+              style={StyleSheet.absoluteFill}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+            />
+          </Animated.View>
           <MeritAmount
             amount={total}
             animateKey={animateKey}
@@ -390,6 +423,14 @@ const styles = StyleSheet.create({
     right: 24,
     height: 1,
     backgroundColor: 'rgba(255,255,255,0.45)',
+  },
+  meritSweep: {
+    position: 'absolute',
+    top: -44,
+    bottom: -44,
+    left: -140,
+    width: 118,
+    opacity: 0.72,
   },
   counter: { ...Typography.heroNumber },
   cardDivider: {

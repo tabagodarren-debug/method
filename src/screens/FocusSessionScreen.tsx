@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Animated,
   ImageSourcePropType, Dimensions, StatusBar, Alert,
@@ -72,6 +72,7 @@ export default function FocusSessionScreen() {
   const [slideIndex, setSlideIndex] = useState(() => Math.floor(Math.random() * SLIDES.length));
 
   const slideOpacity = useRef(new Animated.Value(1)).current;
+  const digitScale = useRef(new Animated.Value(1)).current;
   const endTimeRef = useRef<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const slideRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -188,6 +189,25 @@ export default function FocusSessionScreen() {
   const timeStr = formatTime(timeLeft);
   const timerTop = Math.max(insets.top + 54, SH * 0.095);
 
+  useEffect(() => {
+    digitScale.stopAnimation();
+    digitScale.setValue(1);
+    const pulse = Animated.sequence([
+      Animated.timing(digitScale, {
+        toValue: 1.02,
+        duration: 110,
+        useNativeDriver: true,
+      }),
+      Animated.timing(digitScale, {
+        toValue: 1,
+        duration: 180,
+        useNativeDriver: true,
+      }),
+    ]);
+    pulse.start();
+    return () => pulse.stop();
+  }, [digitScale, timeLeft]);
+
   return (
     <View style={styles.root}>
       <StatusBar hidden />
@@ -204,41 +224,43 @@ export default function FocusSessionScreen() {
 
       {/* Liquid glass timer — frosted background cut through digit shapes */}
       <View style={[styles.timerArea, { top: timerTop }]} pointerEvents="none">
-        <MaskedView
-          style={{ width: TIMER_W, height: TIMER_H }}
-          maskElement={
-            <View style={styles.maskContainer}>
-              <Text style={styles.maskDigits}>{timeStr}</Text>
-            </View>
-          }
-        >
-          {/* High-intensity blur visible through digit cutouts */}
-          <BlurView intensity={70} tint="light" style={{ width: TIMER_W, height: TIMER_H }} />
-          {/* White fill makes glass look luminous */}
-          <View style={styles.digitGlassBase} />
-          {/* Subtle top-to-bottom gradient for depth */}
-          <LinearGradient
-            colors={[
-              'rgba(255,255,255,0.34)',
-              'rgba(255,255,255,0.10)',
-              'rgba(70,110,210,0.10)',
-              'rgba(255,255,255,0.04)',
-            ]}
-            style={StyleSheet.absoluteFill}
-            start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
-          />
-          <LinearGradient
-            colors={['transparent', 'rgba(255,255,255,0.22)', 'transparent']}
-            style={styles.digitDiagonalShine}
-            start={{ x: 0, y: 0.5 }}
-            end={{ x: 1, y: 0.5 }}
-          />
-        </MaskedView>
-        {/* Rim light — tight bright edge around each digit */}
-        <Text style={styles.digitInnerShadow}>{timeStr}</Text>
-        <Text style={styles.digitGlow}>{timeStr}</Text>
-        <Text style={styles.digitEdge}>{timeStr}</Text>
+        <Animated.View style={[styles.timerPulse, { transform: [{ scale: digitScale }] }]}>
+          <MaskedView
+            style={{ width: TIMER_W, height: TIMER_H }}
+            maskElement={
+              <View style={styles.maskContainer}>
+                <Text style={styles.maskDigits}>{timeStr}</Text>
+              </View>
+            }
+          >
+            {/* High-intensity blur visible through digit cutouts */}
+            <BlurView intensity={70} tint="light" style={{ width: TIMER_W, height: TIMER_H }} />
+            {/* White fill makes glass look luminous */}
+            <View style={styles.digitGlassBase} />
+            {/* Subtle top-to-bottom gradient for depth */}
+            <LinearGradient
+              colors={[
+                'rgba(255,255,255,0.34)',
+                'rgba(255,255,255,0.10)',
+                'rgba(70,110,210,0.10)',
+                'rgba(255,255,255,0.04)',
+              ]}
+              style={StyleSheet.absoluteFill}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
+            />
+            <LinearGradient
+              colors={['transparent', 'rgba(255,255,255,0.22)', 'transparent']}
+              style={styles.digitDiagonalShine}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+            />
+          </MaskedView>
+          {/* Rim light — tight bright edge around each digit */}
+          <Text style={styles.digitInnerShadow}>{timeStr}</Text>
+          <Text style={styles.digitGlow}>{timeStr}</Text>
+          <Text style={styles.digitEdge}>{timeStr}</Text>
+        </Animated.View>
       </View>
 
       {/* Always-visible controls */}
@@ -288,6 +310,12 @@ const styles = StyleSheet.create({
     width: TIMER_W,
     height: TIMER_H,
     left: SW / 2 - TIMER_W / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  timerPulse: {
+    width: TIMER_W,
+    height: TIMER_H,
     alignItems: 'center',
     justifyContent: 'center',
   },
