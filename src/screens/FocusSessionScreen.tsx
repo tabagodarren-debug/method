@@ -97,7 +97,10 @@ export default function FocusSessionScreen() {
     useCallback(() => {
       loadInterval().then((loaded) => {
         setIntervalMinutes(loaded);
-        loadDevMode().then(setDevMode);
+        loadDevMode().then((dev) => {
+          setDevMode(dev);
+          startTimer(dev ? DEV_SECONDS : loaded * 60, loaded);
+        });
         Promise.all([loadPersona(), loadStats()]).then(([persona, stats]) => {
           const rank = getRankProgress(stats.totalEarned).current;
           startLiveActivity({
@@ -114,7 +117,6 @@ export default function FocusSessionScreen() {
           setTrackName(getCurrentTrackName());
         });
       }
-      startTimer();
       if (SLIDES.length > 1) {
         slideRef.current = setInterval(advanceSlide, SLIDE_DURATION_MS);
       }
@@ -126,8 +128,7 @@ export default function FocusSessionScreen() {
     }, [advanceSlide])
   );
 
-  const startTimer = () => {
-    const seconds = devMode ? DEV_SECONDS : (intervalMinutes * 60);
+  const startTimer = (seconds: number, intervalMins: number) => {
     setTimeLeft(seconds);
     endTimeRef.current = Date.now() + seconds * 1000;
     timerRef.current = setInterval(() => {
@@ -136,11 +137,11 @@ export default function FocusSessionScreen() {
         clearInterval(timerRef.current!);
         stopAudio();
         SoundHaptics.save();
-        const earned = calculateMerit(intervalMinutes);
+        const earned = calculateMerit(intervalMins);
         endLiveActivity(earned);
         nav.replace('SessionComplete', {
           earnedThisSession: earned,
-          intervalMinutes,
+          intervalMinutes: intervalMins,
         });
       } else {
         setTimeLeft(remaining);
