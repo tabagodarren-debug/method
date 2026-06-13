@@ -12,6 +12,7 @@ import { checkAppUnlock } from '../services/purchases';
 import MeritAmount from '../components/MeritAmount';
 import RankProgressBar from '../components/RankProgressBar';
 import PaywallModal from '../components/PaywallModal';
+import TabScreenTransition from '../components/TabScreenTransition';
 import type { SessionStats } from '../types';
 
 const BAR_MAX_HEIGHT = 72;
@@ -120,7 +121,7 @@ export default function StatsScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.container}>
+      <TabScreenTransition style={styles.container}>
 
         {/* Overview card — merit + rank + progress */}
         <Animated.View entering={FadeInDown.duration(500)}>
@@ -231,7 +232,7 @@ export default function StatsScreen() {
           </GlassCard>
         </Animated.View>
 
-      </View>
+      </TabScreenTransition>
 
       <PaywallModal
         visible={showPaywall}

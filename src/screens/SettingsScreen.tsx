@@ -13,6 +13,7 @@ import { resetShield } from '../storage/shield';
 import { loadDevMode, saveDevMode } from '../storage/settings';
 import type { SessionStats } from '../types';
 import RankUpCard from '../components/RankUpCard';
+import TabScreenTransition from '../components/TabScreenTransition';
 import { RANKS } from '../utils/ranks';
 import type { PersonaData, RootStackParamList } from '../types';
 
@@ -82,7 +83,8 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <TabScreenTransition style={styles.screenMotion}>
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
         <Text style={styles.sectionTitle}>YOUR PERSONA</Text>
         <View style={styles.card}>
@@ -153,7 +155,8 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-      </ScrollView>
+        </ScrollView>
+      </TabScreenTransition>
 
       <RankUpCard
         visible={showRankTest}
@@ -168,6 +171,7 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   safe:         { flex: 1, backgroundColor: Colors.background },
+  screenMotion: { flex: 1 },
   content:      { paddingTop: 88, paddingHorizontal: 24, paddingBottom: 100 },
   sectionTitle: { ...Typography.personaLabel, color: Colors.pureWhite, marginBottom: 12 },
   card: {

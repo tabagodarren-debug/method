@@ -22,6 +22,7 @@ import RankProgressBar from '../components/RankProgressBar';
 import SessionPickerModal from '../components/SessionPickerModal';
 import PaywallModal from '../components/PaywallModal';
 import StreakPill from '../components/StreakPill';
+import TabScreenTransition from '../components/TabScreenTransition';
 import { Colors } from '../constants/colors';
 import { Typography } from '../constants/typography';
 import { loadPersona } from '../storage/persona';
@@ -213,107 +214,109 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.topBar}>
-        <Text style={styles.wordmark}>method.</Text>
-        {!isUnlocked && (
-          <TouchableOpacity style={styles.upgradeChip} onPress={() => setShowPaywall(true)} activeOpacity={0.8}>
-            <Text style={styles.upgradeChipText}>Upgrade</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      <TabScreenTransition style={styles.screenMotion}>
+        <View style={styles.topBar}>
+          <Text style={styles.wordmark}>method.</Text>
+          {!isUnlocked && (
+            <TouchableOpacity style={styles.upgradeChip} onPress={() => setShowPaywall(true)} activeOpacity={0.8}>
+              <Text style={styles.upgradeChipText}>Upgrade</Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
-      <View style={styles.center}>
-        <Animated.Text entering={FadeInDown.duration(500)} style={styles.greeting}>
-          {getGreeting()}
-        </Animated.Text>
-        <Animated.View entering={FadeInDown.delay(80).duration(500)} style={styles.identityRow}>
-          {persona && <Text style={styles.personaLabel}>{persona.name.toUpperCase()}</Text>}
-          {persona && <View style={styles.identityDot} />}
-          <Text style={styles.rankLabel}>{progress.current.title.toUpperCase()}</Text>
-        </Animated.View>
+        <View style={styles.center}>
+          <Animated.Text entering={FadeInDown.duration(500)} style={styles.greeting}>
+            {getGreeting()}
+          </Animated.Text>
+          <Animated.View entering={FadeInDown.delay(80).duration(500)} style={styles.identityRow}>
+            {persona && <Text style={styles.personaLabel}>{persona.name.toUpperCase()}</Text>}
+            {persona && <View style={styles.identityDot} />}
+            <Text style={styles.rankLabel}>{progress.current.title.toUpperCase()}</Text>
+          </Animated.View>
 
-        {/* Glass merit card */}
-        <Animated.View entering={FadeInDown.delay(160).duration(550)} style={styles.meritGlass}>
-          <BlurView intensity={32} tint="dark" style={StyleSheet.absoluteFill} />
-          <LinearGradient
-            colors={['rgba(255,255,255,0.14)', 'rgba(255,255,255,0.04)']}
-            style={StyleSheet.absoluteFill}
-            start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
-          />
-          <View style={styles.meritShine} />
-          <Animated.View pointerEvents="none" style={[styles.meritSweep, meritSweepStyle]}>
+          {/* Glass merit card */}
+          <Animated.View entering={FadeInDown.delay(160).duration(550)} style={styles.meritGlass}>
+            <BlurView intensity={32} tint="dark" style={StyleSheet.absoluteFill} />
             <LinearGradient
-              colors={[
-                'transparent',
-                'rgba(255,255,255,0.04)',
-                'rgba(255,255,255,0.12)',
-                'rgba(255,255,255,0.04)',
-                'transparent',
-              ]}
+              colors={['rgba(255,255,255,0.14)', 'rgba(255,255,255,0.04)']}
               style={StyleSheet.absoluteFill}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
+            />
+            <View style={styles.meritShine} />
+            <Animated.View pointerEvents="none" style={[styles.meritSweep, meritSweepStyle]}>
+              <LinearGradient
+                colors={[
+                  'transparent',
+                  'rgba(255,255,255,0.04)',
+                  'rgba(255,255,255,0.12)',
+                  'rgba(255,255,255,0.04)',
+                  'transparent',
+                ]}
+                style={StyleSheet.absoluteFill}
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+              />
+            </Animated.View>
+            <MeritAmount
+              amount={total}
+              animateKey={animateKey}
+              symbolSize={72}
+              textStyle={styles.counter}
+              color={Colors.pureWhite}
+            />
+            <View style={styles.cardDivider} />
+
+            <RankProgressBar
+              percent={progress.percent}
+              animateKey={animateKey}
+              leftLabel={progress.isMax ? 'Max rank reached' : `${progress.current.title}`}
+              rightLabel={progress.isMax ? 'THE LEGACY' : `${progress.meritToNext} MERIT$ TO RANK`}
             />
           </Animated.View>
-          <MeritAmount
-            amount={total}
-            animateKey={animateKey}
-            symbolSize={72}
-            textStyle={styles.counter}
-            color={Colors.pureWhite}
-          />
-          <View style={styles.cardDivider} />
 
-          <RankProgressBar
-            percent={progress.percent}
-            animateKey={animateKey}
-            leftLabel={progress.isMax ? 'Max rank reached' : `${progress.current.title}`}
-            rightLabel={progress.isMax ? 'THE LEGACY' : `${progress.meritToNext} MERIT$ TO RANK`}
-          />
-        </Animated.View>
+          {/* Goal countdown */}
+          {countdown && (
+            <Animated.Text entering={FadeInDown.delay(240).duration(500)} style={styles.countdown}>
+              <Text style={styles.countdownNum}>{countdown.daysRemaining}</Text>
+              {countdown.daysRemaining === 1 ? ' day' : ' days'} to your goal
+            </Animated.Text>
+          )}
 
-        {/* Goal countdown */}
-        {countdown && (
-          <Animated.Text entering={FadeInDown.delay(240).duration(500)} style={styles.countdown}>
-            <Text style={styles.countdownNum}>{countdown.daysRemaining}</Text>
-            {countdown.daysRemaining === 1 ? ' day' : ' days'} to your goal
-          </Animated.Text>
-        )}
+          {/* Streak pill */}
+          <Animated.View entering={FadeInDown.delay(260).duration(500)} style={styles.streakRow}>
+            <StreakPill
+              streak={stats?.currentStreak ?? 0}
+              dailySessions={dailySessions}
+              shieldAvailable={isUnlocked ? (shield?.available ?? false) : undefined}
+              shieldDaysLeft={isUnlocked && shield ? shieldDaysUntilRefill(shield) : undefined}
+              animateKey={animateKey}
+            />
+          </Animated.View>
 
-        {/* Streak pill */}
-        <Animated.View entering={FadeInDown.delay(260).duration(500)} style={styles.streakRow}>
-          <StreakPill
-            streak={stats?.currentStreak ?? 0}
-            dailySessions={dailySessions}
-            shieldAvailable={isUnlocked ? (shield?.available ?? false) : undefined}
-            shieldDaysLeft={isUnlocked && shield ? shieldDaysUntilRefill(shield) : undefined}
-            animateKey={animateKey}
-          />
-        </Animated.View>
+          {/* Today + Yesterday stat pills */}
+          <Animated.View entering={FadeInDown.delay(320).duration(500)} style={styles.statRow}>
+            <StatPill label="Today" sessions={todaySessions} earned={todayEarned} lost={todayLost} />
+            <StatPill label="Yesterday" sessions={yesterdaySessions} earned={yesterdayEarned} lost={yesterdayLost} />
+          </Animated.View>
 
-        {/* Today + Yesterday stat pills */}
-        <Animated.View entering={FadeInDown.delay(320).duration(500)} style={styles.statRow}>
-          <StatPill label="Today" sessions={todaySessions} earned={todayEarned} lost={todayLost} />
-          <StatPill label="Yesterday" sessions={yesterdaySessions} earned={yesterdayEarned} lost={yesterdayLost} />
-        </Animated.View>
+          <Animated.View entering={FadeInDown.delay(400).duration(500)}>
+            <PillButton
+              label="Start Session"
+              onPress={() => setShowPicker(true)}
+              style={styles.startBtn}
+            />
+          </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(400).duration(500)}>
-          <PillButton
-            label="Start Session"
-            onPress={() => setShowPicker(true)}
-            style={styles.startBtn}
-          />
-        </Animated.View>
-
-        {/* Share progress */}
-        <Animated.View entering={FadeInDown.delay(460).duration(500)}>
-          <TouchableOpacity style={styles.shareRow} onPress={() => setShowShare(true)}>
-            <Ionicons name="share-outline" size={13} color="rgba(255,255,255,0.35)" />
-            <Text style={styles.shareLabel}>Share progress</Text>
-          </TouchableOpacity>
-        </Animated.View>
-      </View>
+          {/* Share progress */}
+          <Animated.View entering={FadeInDown.delay(460).duration(500)}>
+            <TouchableOpacity style={styles.shareRow} onPress={() => setShowShare(true)}>
+              <Ionicons name="share-outline" size={13} color="rgba(255,255,255,0.35)" />
+              <Text style={styles.shareLabel}>Share progress</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      </TabScreenTransition>
 
       {stats && (
         <ShareCard
@@ -349,6 +352,7 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   safe:   { flex: 1, backgroundColor: Colors.background },
+  screenMotion: { flex: 1 },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
