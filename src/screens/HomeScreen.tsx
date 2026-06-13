@@ -74,6 +74,7 @@ export default function HomeScreen() {
   const [interval, setIntervalMinutes] = useState(25);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [shield, setShield] = useState<ShieldState | null>(null);
+  const [animateKey, setAnimateKey] = useState(0);
 
   useFocusEffect(
     useCallback(() => {
@@ -99,11 +100,13 @@ export default function HomeScreen() {
               await consumeShield();
               const updated = await loadStats();
               setStats(updated);
+              setAnimateKey(k => k + 1);
               setShield({ available: false, usedAt: today, refillAt: null });
               return;
             }
           }
           setStats(currentStats);
+          setAnimateKey(k => k + 1);
         }
       );
     }, [])
@@ -160,6 +163,7 @@ export default function HomeScreen() {
           <View style={styles.meritShine} />
           <MeritAmount
             amount={total}
+            animateKey={animateKey}
             symbolSize={72}
             textStyle={styles.counter}
             color={Colors.pureWhite}
