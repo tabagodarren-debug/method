@@ -94,17 +94,16 @@ export default function PaywallModal({ visible, onClose, onUnlocked }: Props) {
       <BlurView intensity={55} tint="dark" style={StyleSheet.absoluteFill} />
       <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)' }]} />
 
+      {/* Close button — above all overlays */}
+      <TouchableOpacity
+        style={[styles.closeBtn, { top: insets.top + 16 }]}
+        onPress={onClose}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+      >
+        <Ionicons name="close" size={20} color="rgba(255,255,255,0.50)" />
+      </TouchableOpacity>
+
       <View style={[styles.root, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 28 }]}>
-
-        {/* Close button */}
-        <TouchableOpacity
-          style={styles.closeBtn}
-          onPress={onClose}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        >
-          <Ionicons name="close" size={20} color="rgba(255,255,255,0.40)" />
-        </TouchableOpacity>
-
         <Animated.View style={[styles.content, contentStyle]}>
 
           {/* Badge */}
@@ -192,10 +191,9 @@ const styles = StyleSheet.create({
   },
   closeBtn: {
     position: 'absolute',
-    top: 0,
     right: 28,
-    zIndex: 10,
-    paddingTop: 8,
+    zIndex: 100,
+    padding: 4,
   },
   content: {
     width: '100%',
