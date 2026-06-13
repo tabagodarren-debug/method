@@ -16,8 +16,10 @@ import StreakPill from '../components/StreakPill';
 import { Colors } from '../constants/colors';
 import { Typography } from '../constants/typography';
 import { loadPersona } from '../storage/persona';
-import { loadStats } from '../storage/stats';
+import { loadStats, applyStreakShield } from '../storage/stats';
 import { loadInterval, saveInterval } from '../storage/settings';
+import { checkShieldRefill, consumeShield, shieldDaysUntilRefill } from '../storage/shield';
+import type { ShieldState } from '../storage/shield';
 import { checkAppUnlock } from '../services/purchases';
 import { getRankProgress } from '../utils/ranks';
 import { getGoalCountdown } from '../utils/goal';
@@ -71,13 +73,39 @@ export default function HomeScreen() {
   const [showPaywall, setShowPaywall] = useState(false);
   const [interval, setIntervalMinutes] = useState(25);
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [shield, setShield] = useState<ShieldState | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       loadPersona().then(setPersona);
-      loadStats().then(setStats);
       loadInterval().then(setIntervalMinutes);
-      checkAppUnlock().then(setIsUnlocked);
+
+      Promise.all([checkAppUnlock(), checkShieldRefill(), loadStats()]).then(
+        async ([unlocked, shieldState, currentStats]) => {
+          setIsUnlocked(unlocked);
+          setShield(shieldState);
+
+          // Auto-apply shield if Pro, shield available, and user missed yesterday
+          if (unlocked && shieldState.available && currentStats.currentStreak > 0) {
+            const today = new Date().toISOString().slice(0, 10);
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().slice(0, 10);
+            const missedYesterday =
+              currentStats.lastSessionDate !== yesterdayStr &&
+              currentStats.lastSessionDate !== today;
+            if (missedYesterday) {
+              await applyStreakShield();
+              await consumeShield();
+              const updated = await loadStats();
+              setStats(updated);
+              setShield({ available: false, usedAt: today, refillAt: null });
+              return;
+            }
+          }
+          setStats(currentStats);
+        }
+      );
     }, [])
   );
 
@@ -158,6 +186,8 @@ export default function HomeScreen() {
           <StreakPill
             streak={stats?.currentStreak ?? 0}
             dailySessions={dailySessions}
+            shieldAvailable={isUnlocked ? (shield?.available ?? false) : undefined}
+            shieldDaysLeft={isUnlocked && shield ? shieldDaysUntilRefill(shield) : undefined}
           />
         </Animated.View>
 

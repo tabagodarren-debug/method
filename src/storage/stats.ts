@@ -58,6 +58,17 @@ export const recordSession = async (dateStr: string, earnedAmount: number, inter
   return stats;
 };
 
+// Bridges yesterday into the streak so the next real session keeps the chain
+export const applyStreakShield = async (): Promise<void> => {
+  const stats = await loadStats();
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().slice(0, 10);
+  stats.dailySessions[yesterdayStr] = (stats.dailySessions[yesterdayStr] ?? 0) + 1;
+  stats.lastSessionDate = yesterdayStr;
+  await saveStats(stats);
+};
+
 export const resetStats = async (): Promise<void> => {
   await AsyncStorage.setItem(STATS_KEY, JSON.stringify({ ...DEFAULT_STATS }));
 };

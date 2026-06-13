@@ -9,6 +9,7 @@ import { Typography } from '../constants/typography';
 import { loadPersona, clearPersona } from '../storage/persona';
 import { checkAppUnlock } from '../services/purchases';
 import { resetStats, loadStats } from '../storage/stats';
+import { resetShield } from '../storage/shield';
 import type { SessionStats } from '../types';
 import RankUpCard from '../components/RankUpCard';
 import { RANKS } from '../utils/ranks';
@@ -49,7 +50,7 @@ export default function SettingsScreen() {
   const handleResetStats = () => {
     Alert.alert('Reset all stats?', 'Merit, sessions, streaks and rank will be wiped.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Reset', style: 'destructive', onPress: () => resetStats() },
+      { text: 'Reset', style: 'destructive', onPress: () => { resetStats(); resetShield(); } },
     ]);
   };
 

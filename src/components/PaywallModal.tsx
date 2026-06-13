@@ -24,17 +24,23 @@ const FEATURES = [
   {
     icon: 'timer-outline' as const,
     title: 'Custom focus intervals',
-    sub: 'Set any session length from 5 to 180 minutes.',
+    sub: 'Train in sessions from 5 to 180 minutes. Longer sessions, more Merit$.',
   },
   {
-    icon: 'infinite-outline' as const,
-    title: 'Lifetime access',
-    sub: 'One payment. No subscription. Yours forever.',
+    icon: 'shield' as const,
+    title: 'Streak Shield',
+    sub: 'Miss a day and your streak stays intact. One shield, refills every 7 days.',
+    green: true,
+  },
+  {
+    icon: 'bar-chart-outline' as const,
+    title: 'Merit analytics',
+    sub: 'See your best days, streaks, earned Merit$, and focus patterns.',
   },
   {
     icon: 'flash-outline' as const,
     title: 'Everything that ships next',
-    sub: 'All future Pro features included, no extra charge.',
+    sub: 'Soundscapes, widgets, and all future Pro features. No extra charge.',
   },
 ];
 
@@ -145,8 +151,8 @@ export default function PaywallModal({ visible, onClose, onUnlocked }: Props) {
           <View style={styles.featureList}>
             {FEATURES.map((f, i) => (
               <View key={i} style={styles.featureRow}>
-                <View style={styles.iconWrap}>
-                  <Ionicons name={f.icon} size={17} color={Colors.pureWhite} />
+                <View style={[styles.iconWrap, f.green && styles.iconWrapGreen]}>
+                  <Ionicons name={f.icon} size={17} color={f.green ? '#52C97A' : Colors.pureWhite} />
                 </View>
                 <View style={styles.featureText}>
                   <Text style={styles.featureTitle}>{f.title}</Text>
@@ -273,6 +279,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.06)',
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 1,
+  },
+  iconWrapGreen: {
+    borderColor: 'rgba(82,201,122,0.30)',
+    backgroundColor: 'rgba(82,201,122,0.08)',
     marginTop: 1,
   },
   featureText: { flex: 1 },
