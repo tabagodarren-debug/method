@@ -139,14 +139,14 @@ export default function HomeScreen() {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [shield, setShield] = useState<ShieldState | null>(null);
   const [animateKey, setAnimateKey] = useState(0);
-  const meritSweepX = useSharedValue(-180);
+  const meritSweepX = useSharedValue(-220);
 
   useEffect(() => {
     meritSweepX.value = withRepeat(
       withSequence(
-        withTiming(420, { duration: 1150, easing: Easing.inOut(Easing.quad) }),
-        withTiming(-180, { duration: 0 }),
-        withDelay(6850, withTiming(-180, { duration: 0 }))
+        withTiming(460, { duration: 1850, easing: Easing.bezier(0.22, 0.61, 0.36, 1) }),
+        withTiming(-220, { duration: 0 }),
+        withDelay(6150, withTiming(-220, { duration: 0 }))
       ),
       -1,
       false
@@ -244,7 +244,13 @@ export default function HomeScreen() {
           <View style={styles.meritShine} />
           <Animated.View pointerEvents="none" style={[styles.meritSweep, meritSweepStyle]}>
             <LinearGradient
-              colors={['transparent', 'rgba(255,255,255,0.13)', 'transparent']}
+              colors={[
+                'transparent',
+                'rgba(255,255,255,0.04)',
+                'rgba(255,255,255,0.12)',
+                'rgba(255,255,255,0.04)',
+                'transparent',
+              ]}
               style={StyleSheet.absoluteFill}
               start={{ x: 0, y: 0.5 }}
               end={{ x: 1, y: 0.5 }}
@@ -429,9 +435,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -44,
     bottom: -44,
-    left: -140,
-    width: 118,
-    opacity: 0.72,
+    left: -170,
+    width: 160,
+    opacity: 0.62,
   },
   counter: { ...Typography.heroNumber },
   cardDivider: {
