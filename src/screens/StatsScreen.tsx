@@ -123,15 +123,17 @@ export default function StatsScreen() {
               </View>
             </View>
             <View style={styles.cardDivider} />
-            <RankProgressBar
-              percent={progress.percent}
-              leftLabel={progress.isMax ? 'Max rank reached' : progress.current.title}
-              rightLabel={
-                progress.isMax
-                  ? 'THE LEGACY'
-                  : `${progress.meritToNext} MERIT$ TO RANK`
-              }
-            />
+            <View style={styles.overviewProgress}>
+              <RankProgressBar
+                percent={progress.percent}
+                leftLabel={progress.isMax ? 'Max rank reached' : progress.current.title}
+                rightLabel={
+                  progress.isMax
+                    ? 'THE LEGACY'
+                    : `${progress.meritToNext} MERIT$ TO RANK`
+                }
+              />
+            </View>
           </GlassCard>
         </Animated.View>
 
@@ -248,6 +250,7 @@ const styles = StyleSheet.create({
     paddingTop: 22,
     paddingBottom: 20,
   },
+  overviewProgress: { paddingHorizontal: 24, paddingBottom: 22 },
   overviewLeft:   { gap: 6 },
   overviewRight:  { alignItems: 'flex-end', gap: 6 },
   overviewKicker: {
