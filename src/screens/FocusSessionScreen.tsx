@@ -21,6 +21,7 @@ import { loadPersona } from '../storage/persona';
 import { loadStats } from '../storage/stats';
 import { getRankProgress } from '../utils/ranks';
 import { playTrack, pauseAudio, resumeAudio, skipTrack, stopAudio, getCurrentTrackName, hasTracks } from '../services/audio';
+import { SoundHaptics } from '../utils/soundHaptics';
 import type { RootStackParamList } from '../types';
 
 const DEV_SECONDS = 10;
@@ -74,6 +75,7 @@ export default function FocusSessionScreen() {
   const endTimeRef = useRef<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const slideRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastTickRef = useRef<number | null>(null);
 
   const advanceSlide = useCallback(() => {
     Animated.timing(slideOpacity, {
@@ -132,6 +134,7 @@ export default function FocusSessionScreen() {
       if (remaining <= 0) {
         clearInterval(timerRef.current!);
         stopAudio();
+        SoundHaptics.save();
         const earned = calculateMerit(intervalMinutes);
         endLiveActivity(earned);
         nav.replace('SessionComplete', {
@@ -141,6 +144,10 @@ export default function FocusSessionScreen() {
       } else {
         setTimeLeft(remaining);
         updateLiveActivity(remaining);
+        if (remaining <= 5 && remaining !== lastTickRef.current) {
+          lastTickRef.current = remaining;
+          SoundHaptics.tap();
+        }
       }
     }, 500);
   };

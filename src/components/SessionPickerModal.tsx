@@ -10,6 +10,7 @@ import Animated, {
 import PillButton from './PillButton';
 import { Colors } from '../constants/colors';
 import { meritRangeLabel } from '../utils/merit';
+import { SoundHaptics } from '../utils/soundHaptics';
 
 const FREE_PRESETS = [15, 30, 60];
 const CUSTOM_MIN = 5;
@@ -79,6 +80,7 @@ export default function SessionPickerModal({
 
   const adjustCustom = (delta: number) => {
     const next = Math.min(CUSTOM_MAX, Math.max(CUSTOM_MIN, customMinutes + delta));
+    if (next !== customMinutes) SoundHaptics.advance();
     setCustomMinutes(next);
     setSelected(next);
   };
@@ -107,7 +109,7 @@ export default function SessionPickerModal({
               return (
                 <TouchableOpacity
                   key={mins}
-                  onPress={() => setSelected(mins)}
+                  onPress={() => { SoundHaptics.tap(); setSelected(mins); }}
                   activeOpacity={0.8}
                   style={[styles.tile, active && styles.tileActive]}
                 >
@@ -176,7 +178,7 @@ export default function SessionPickerModal({
           <PillButton
             label="Start Session"
             variant="primary"
-            onPress={() => dismiss(() => onConfirm(selected))}
+            onPress={() => { SoundHaptics.select(); dismiss(() => onConfirm(selected)); }}
             width="100%"
             height={56}
             style={styles.confirmBtn}

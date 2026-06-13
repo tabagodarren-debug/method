@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import * as Haptics from 'expo-haptics';
 import { View, Text, StyleSheet, SafeAreaView, Dimensions, TouchableOpacity } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
@@ -96,7 +97,11 @@ export default function SessionCompleteScreen() {
 
         if (newRank) {
           setRankedUp(newRank);
-          setTimeout(() => setShowCeremony(true), 900);
+          setTimeout(() => {
+            setShowCeremony(true);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            setTimeout(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success), 200);
+          }, 900);
         }
       }
     );
