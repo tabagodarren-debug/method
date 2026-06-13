@@ -8,7 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   useSharedValue, useAnimatedStyle,
-  withTiming, withDelay, Easing,
+  withTiming, withDelay, Easing, runOnJS,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../constants/colors';
@@ -44,21 +44,36 @@ export default function PaywallModal({ visible, onClose, onUnlocked }: Props) {
   const [loading, setLoading] = useState(false);
   const [restoring, setRestoring] = useState(false);
 
-  const contentOp = useSharedValue(0);
-  const contentTy = useSharedValue(32);
+  const backdropOp = useSharedValue(0);
+  const contentOp  = useSharedValue(0);
+  const contentTy  = useSharedValue(32);
+  const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     if (visible) {
+      setModalVisible(true);
       getAppPlusPrice().then(setPrice);
-      contentOp.value = withDelay(60, withTiming(1, { duration: 400, easing: Easing.out(Easing.cubic) }));
-      contentTy.value = withDelay(60, withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) }));
-    } else {
-      contentOp.value = 0;
-      contentTy.value = 32;
+      backdropOp.value = withTiming(1, { duration: 300 });
+      contentOp.value  = withDelay(60, withTiming(1, { duration: 400, easing: Easing.out(Easing.cubic) }));
+      contentTy.value  = withDelay(60, withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) }));
     }
   }, [visible]);
 
-  const contentStyle = useAnimatedStyle(() => ({
+  const dismiss = () => {
+    backdropOp.value = withTiming(0, { duration: 280 });
+    contentOp.value  = withTiming(0, { duration: 260, easing: Easing.in(Easing.cubic) }, (done) => {
+      if (done) runOnJS(finishClose)();
+    });
+    contentTy.value  = withTiming(32, { duration: 260, easing: Easing.in(Easing.cubic) });
+  };
+
+  const finishClose = () => {
+    setModalVisible(false);
+    onClose();
+  };
+
+  const backdropStyle = useAnimatedStyle(() => ({ opacity: backdropOp.value }));
+  const contentStyle  = useAnimatedStyle(() => ({
     opacity: contentOp.value,
     transform: [{ translateY: contentTy.value }],
   }));
@@ -69,7 +84,7 @@ export default function PaywallModal({ visible, onClose, onUnlocked }: Props) {
     setLoading(false);
     if (result.success) {
       onUnlocked();
-      onClose();
+      dismiss();
     } else if (result.error) {
       Alert.alert('Purchase failed', result.error);
     }
@@ -81,7 +96,7 @@ export default function PaywallModal({ visible, onClose, onUnlocked }: Props) {
     setRestoring(false);
     if (success) {
       onUnlocked();
-      onClose();
+      dismiss();
     } else {
       Alert.alert('Nothing to restore', 'No previous purchase found for this Apple ID.');
     }
@@ -90,14 +105,16 @@ export default function PaywallModal({ visible, onClose, onUnlocked }: Props) {
   const isBusy = loading || restoring;
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <BlurView intensity={55} tint="dark" style={StyleSheet.absoluteFill} />
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)' }]} />
+    <Modal visible={modalVisible} transparent animationType="none" onRequestClose={dismiss}>
+      <Animated.View style={[StyleSheet.absoluteFill, backdropStyle]}>
+        <BlurView intensity={55} tint="dark" style={StyleSheet.absoluteFill} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)' }]} />
+      </Animated.View>
 
       {/* Close button — above all overlays */}
       <TouchableOpacity
         style={[styles.closeBtn, { top: insets.top + 16 }]}
-        onPress={onClose}
+        onPress={dismiss}
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
       >
         <Ionicons name="close" size={20} color="rgba(255,255,255,0.50)" />
